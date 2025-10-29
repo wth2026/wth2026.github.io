@@ -1,0 +1,2448 @@
+// 技能系统状态
+let skill1Active = [false, false];
+let skill1Used = [false, false];
+let skill2Used = [false, false];
+let skill3Used = [false, false];
+let skill4Used = [false, false];
+let skill5Used = [false, false];
+let skill6Used = [false, false];
+let skill7Used = [false, false];
+let skill8Used = [false, false];
+let skill9Used = [false, false];
+let skill11Used = [false, false];
+let skill12Used = [false, false];
+let skill7Active = [false, false];
+let skill11Active = [false, false];
+let skill12Active = [false, false];
+let skill11Blocked = [false, false];
+let skill12Blocked = false;
+let skill13Used = [false, false];
+let skill13Name = "鹰之一手";
+let skill13Active = false;
+
+
+// 全局技能使用记录
+let globalSkillsUsed = new Array(12).fill(false);
+let allSkillsUsed = false;
+
+// 游戏常量
+const BOARD_SIZE = 15;
+const CELL_SIZE = 30;
+const PIECE_RADIUS = 13;
+const SKILL_RANGE = 3;
+const STAR_POSITIONS = [[3, 3], [3, 11], [7, 7], [11, 3], [11, 11]];
+const BOARD_IMAGE_URL = 'img/zhangcheng.jpg';
+
+// 游戏状态
+let board = [];
+let moveNumbers = [];
+let brokenPositions = [];
+let currentPlayer = 1;
+let gameOver = false;
+let usingSkill = 0;
+let selectedPieces = [];
+let selectedRemovedPieces = [];
+let displacedPieces = [];
+let blockedPositions = [];
+let moveCount = [0, 0];
+let removedPieces = [];
+let boardTransparent = false;
+let boardImageMode = false;
+let hoveredPiece = null;
+let warningActive = false;
+let restartRequested = [false, false];
+let backgroundMusicPlaying = false;
+let actionLog = [];
+let playerNames = ['子棋', '张呈'];
+let highlightedPieces = [];
+
+// 新增变量
+let playerTypes = ['human', 'human'];
+let gameState = 'initial'; // 'initial', 'playing', 'gameOver'
+
+let skill9HighlightedPiece = null;
+let skill9HighlightTurns = 0;
+let boardImageTurns = 0;
+let skill8RemovedPieces = [];
+let restoredPieces = [];
+let skill2TimerActive = false;
+let skill2Timer = null;
+let dripStoneCount = [];
+let skill12TimerActive = false;
+let skill12Timer = null;
+
+let gameStarted = false;
+let piecePlacementHistory = [];
+let timeReversalInProgress = false;
+let characterMusic = {};
+let victoryMusic = {};
+
+// 音效对象
+let moveSound, removeSound, brokenSound, skill1RemoveSound, skill7RemoveSound;
+let skillSounds = [];
+
+// DOM元素
+let canvas, ctx, statusDisplay, turnInfo, additionalInfo, restartButton;
+let shichahaiMap, removedPiecesContainer, backgroundMusic, actionLogContent;
+let blackPlayerNameInput, whitePlayerNameInput, blackPlayerDisplay, whitePlayerDisplay;
+let playerSubtitle, volumeInfo, aiThinkingLog;
+
+// 初始化游戏
+function initGame() {
+    // 获取DOM元素
+    canvas = document.getElementById('board');
+    ctx = canvas.getContext('2d');
+    statusDisplay = document.getElementById('status');
+    turnInfo = document.getElementById('turn-info');
+    additionalInfo = document.getElementById('additional-info');
+    restartButton = document.getElementById('restart');
+    shichahaiMap = document.getElementById('shichahai-map');
+    removedPiecesContainer = document.getElementById('removed-pieces');
+    backgroundMusic = document.getElementById('background-music');
+    actionLogContent = document.getElementById('action-log-content');
+    blackPlayerNameInput = document.getElementById('black-player-name');
+    whitePlayerNameInput = document.getElementById('white-player-name');
+    blackPlayerDisplay = document.getElementById('black-player-display');
+    whitePlayerDisplay = document.getElementById('white-player-display');
+    playerSubtitle = document.getElementById('player-subtitle');
+    volumeInfo = document.getElementById('volume-info');
+    aiThinkingLog = document.getElementById('ai-thinking-log');
+    
+    // 初始化角色音乐
+    initCharacterMusic();
+    
+    // 初始化玩家类型
+    const blackTypeSelect = document.getElementById('black-player-type');
+    const whiteTypeSelect = document.getElementById('white-player-type');
+    
+    if (blackTypeSelect && whiteTypeSelect) {
+        playerTypes[0] = blackTypeSelect.value;
+        playerTypes[1] = whiteTypeSelect.value;
+    } else {
+        playerTypes = ['human', 'human'];
+    }
+    
+    initBoard();
+    initAudio();
+    initEventListeners();
+    updatePlayerNames();
+    updateAIThinkingDisplay();
+    
+    document.getElementById('skill2-btn').textContent = '技能2: 静如止水';
+    if (typeof initAI === 'function') {
+        initAI();
+    }
+    
+    // 添加技能13按钮事件监听
+    const skill13Btn = document.getElementById('skill13-btn');
+    if (skill13Btn) {
+        skill13Btn.addEventListener('click', () => useSkill(13));
+    }
+    
+    // 添加技能对话框事件监听
+    const addSkillBtn = document.getElementById('add-skill-btn');
+    const saveSkillBtn = document.getElementById('save-skill-btn');
+    const cancelSkillBtn = document.getElementById('cancel-skill-btn');
+    const addSkillDialog = document.getElementById('add-skill-dialog');
+    
+    if (addSkillBtn) {
+        addSkillBtn.addEventListener('click', showAddSkillDialog);
+    }
+    if (saveSkillBtn) {
+        saveSkillBtn.addEventListener('click', saveNewSkill);
+    }
+    if (cancelSkillBtn) {
+        cancelSkillBtn.addEventListener('click', hideAddSkillDialog);
+    }
+    
+    // 初始化技能13音乐
+    const skill13Music = document.getElementById('skill13-music');
+    const addSkillMusic = document.getElementById('add-skill-music');
+    
+    // 初始化游戏状态为初始状态
+    setGameState('initial');
+}
+
+
+// 设置游戏状态
+function setGameState(state) {
+    gameState = state;
+    
+    // 获取操作记录列元素
+    const actionLogColumn = document.getElementById('action-log-column');
+    
+    switch (state) {
+        case 'initial':
+            // 状态1：初始状态
+            restartButton.textContent = '开始下棋';
+            restartButton.className = 'start-button';
+            restartButton.disabled = false;
+            
+            // 禁用棋盘点击
+            canvas.style.pointerEvents = 'none';
+            
+            // 禁用所有技能按钮
+            const skillButtons = document.querySelectorAll('.skill-btn');
+            skillButtons.forEach(btn => {
+                if (btn.id !== 'restart') {
+                    btn.disabled = true;
+                }
+            });
+            
+            // 关闭背景音乐
+            if (backgroundMusicPlaying) {
+                backgroundMusic.pause();
+                backgroundMusicPlaying = false;
+            }
+            
+            // 隐藏操作记录列
+            if (actionLogColumn) {
+                actionLogColumn.style.display = 'none';
+            }
+            
+            updateStatusDisplay("等待开始", "请点击\"开始下棋\"按钮");
+            statusDisplay.className = 'status-container';
+            
+            break;
+            
+        case 'playing':
+            // 状态2：对局状态
+            gameStarted = true;
+            timeReversalInProgress = false;
+            
+            restartButton.textContent = '时光倒流';
+            restartButton.className = '';
+            restartButton.disabled = false;
+            
+            // 启用棋盘点击
+            canvas.style.pointerEvents = 'auto';
+            
+            // 启用可用的技能按钮
+            updateSkillButtons();
+            
+            // 关闭背景音乐
+            if (backgroundMusicPlaying) {
+                backgroundMusic.pause();
+                backgroundMusicPlaying = false;
+            }
+            
+            // 显示操作记录列（带渐变动画）
+            if (actionLogColumn) {
+                actionLogColumn.style.display = 'block';
+                actionLogColumn.style.opacity = '0';
+                setTimeout(() => {
+                    actionLogColumn.style.transition = 'opacity 0.5s ease-in-out';
+                    actionLogColumn.style.opacity = '1';
+                }, 10);
+            }
+            
+            // 更新状态显示
+            const playerName = playerNames[currentPlayer - 1];
+            updateStatusDisplay(`${playerName}回合`, "");
+            statusDisplay.className = currentPlayer === 1 ? 'status-container black-turn' : 'status-container white-turn';
+            
+            addActionLog("游戏开始");
+            
+            // 如果当前玩家是AI，触发AI移动
+            if (playerTypes[currentPlayer - 1].startsWith('ai')) {
+                setTimeout(() => {
+                    if (typeof aiMakeMove === 'function') {
+                        aiMakeMove();
+                    }
+                }, 500);
+            }
+            break;
+            
+        case 'gameOver':
+            // 状态3：结算状态
+            restartButton.textContent = '颁奖结束';
+            restartButton.className = 'award-button';
+            restartButton.disabled = false;
+            
+            // 禁用棋盘点击
+            canvas.style.pointerEvents = 'none';
+            
+            // 禁用所有技能按钮
+            const allSkillButtons = document.querySelectorAll('.skill-btn');
+            allSkillButtons.forEach(btn => {
+                if (btn.id !== 'restart') {
+                    btn.disabled = true;
+                }
+            });
+            
+            // 开启背景音乐
+            if (!backgroundMusicPlaying) {
+                backgroundMusic.play().catch(e => console.log("背景音乐播放失败:", e));
+                backgroundMusicPlaying = true;
+            }
+            
+            // 播放胜利音乐
+            const playerType = document.getElementById(`${currentPlayer === 1 ? 'black' : 'white'}-player-type`).value;
+            if (playerType.startsWith('ai-')) {
+                const aiType = playerType.replace('ai-', '');
+                const color = currentPlayer === 1 ? 'black' : 'white';
+                playVictoryMusic(aiType, color);
+            }
+            break;
+    }
+    
+    // 更新图片显示
+    updateImageDisplay();
+}
+
+// 初始化棋盘
+function initBoard() {
+    // 重置技能状态
+    skill1Active = [false, false];
+    skill1Used = [false, false];
+    skill2Used = [false, false];
+    skill3Used = [false, false];
+    skill4Used = [false, false];
+    skill5Used = [false, false];
+    skill6Used = [false, false];
+    skill7Used = [false, false];
+    skill8Used = [false, false];
+    skill9Used = [false, false];
+    skill11Used = [false, false];
+    skill12Used = [false, false];
+    skill7Active = [false, false];
+    skill11Active = [false, false];
+    skill12Active = [false, false];
+    skill11Blocked = [false, false];
+    skill12Blocked = false;
+    
+    globalSkillsUsed = new Array(12).fill(false);
+    allSkillsUsed = false;
+    
+    board = [];
+    moveNumbers = [];
+    brokenPositions = [];
+    displacedPieces = [];
+    blockedPositions = [];
+    removedPieces = [];
+    actionLog = [];
+    highlightedPieces = [];
+    skill9HighlightedPiece = null;
+    skill9HighlightTurns = 0;
+    boardImageTurns = 0;
+    skill8RemovedPieces = [];
+    restoredPieces = [];
+    dripStoneCount = [];
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        board[i] = [];
+        moveNumbers[i] = [];
+        dripStoneCount[i] = [];
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            board[i][j] = 0;
+            moveNumbers[i][j] = 0;
+            dripStoneCount[i][j] = 0;
+        }
+    }
+    
+    currentPlayer = 1;
+    gameOver = false;
+    usingSkill = 0;
+    selectedPieces = [];
+    selectedRemovedPieces = [];
+    moveCount = [0, 0];
+    boardTransparent = false;
+    boardImageMode = false;
+    hoveredPiece = null;
+    warningActive = false;
+    restartRequested = [false, false];
+    
+    backgroundMusicPlaying = false;
+    backgroundMusic.pause();
+    backgroundMusic.currentTime = 0;
+    
+    skill2TimerActive = false;
+    skill12TimerActive = false;
+    
+    canvas.classList.remove('board-transparent');
+    canvas.classList.remove('board-image');
+    
+    document.getElementById('skill2-btn').textContent = '技能2: 静如止水';
+    
+    actionLogContent.innerHTML = '';
+    
+    updateRemovedPiecesDisplay();
+    
+    drawBoard();
+    updateBackgroundMusicVolume();
+    updateAIThinkingDisplay();
+}
+
+// 初始化音效
+function initAudio() {
+    const soundUrls = [
+        'music/qizi1.MP3',
+        'music/qizi2.wav',
+        'music/qipan1.MP3',
+        'music/yalie.MP3',
+        'music/niyaotiaowuma.MP3'
+    ];
+    
+    [moveSound, removeSound, brokenSound, skill1RemoveSound, skill7RemoveSound] = soundUrls.map(url => {
+        try {
+            return url ? new Audio(url) : null;
+        } catch (e) {
+            console.log('音效初始化失败:', e);
+            return null;
+        }
+    });
+    
+    // 技能音效 - 添加错误处理
+    const skillSoundUrls = [
+        'music/feishazoushi.MP3', 'music/jingruzhishui.MP3', 'music/libashanxi.MP3',
+        'music/dongshanzaiqi.MP3', 'music/bgm.MP3', 'music/diaochenglishan.MP3',
+        'music/woshibaojie.MP3', 'music/shijinbumei.MP3', 'music/liangjifanzhuan.MP3',
+        'music/shuidishichuan.MP3', 'music/qinna.MP3', 'music/apt.MP3'
+    ];
+    
+    skillSounds = skillSoundUrls.map(url => {
+        try {
+            return url ? new Audio(url) : null;
+        } catch (e) {
+            console.log('技能音效初始化失败:', e);
+            return null;
+        }
+    });
+    
+    const BACKGROUND_MUSIC_URL = 'music/bgm.MP3';
+    // 背景音乐
+    if (BACKGROUND_MUSIC_URL) {
+        try {
+            backgroundMusic.src = BACKGROUND_MUSIC_URL;
+            backgroundMusic.volume = 1.0;
+        } catch (e) {
+            console.log('背景音乐初始化失败:', e);
+        }
+    }
+}
+
+function initCharacterMusic() {
+    // 黑方角色音乐
+    characterMusic['black-zhangcheng'] = document.getElementById('character-music-black-zhangcheng');
+    characterMusic['black-skill5'] = document.getElementById('character-music-black-skill5');
+    characterMusic['black-ziqi'] = document.getElementById('character-music-black-ziqi');
+    characterMusic['black-wangjinbao'] = document.getElementById('character-music-black-wangjinbao');
+    
+    // 白方角色音乐
+    characterMusic['white-zhangcheng'] = document.getElementById('character-music-white-zhangcheng');
+    characterMusic['white-skill5'] = document.getElementById('character-music-white-skill5');
+    characterMusic['white-ziqi'] = document.getElementById('character-music-white-ziqi');
+    characterMusic['white-wangjinbao'] = document.getElementById('character-music-white-wangjinbao');
+    
+    // 胜利音乐
+    victoryMusic['black-zhangcheng'] = document.getElementById('victory-music-black-zhangcheng');
+    victoryMusic['black-skill5'] = document.getElementById('victory-music-black-skill5');
+    victoryMusic['black-ziqi'] = document.getElementById('victory-music-black-ziqi');
+    victoryMusic['black-wangjinbao'] = document.getElementById('victory-music-black-wangjinbao');
+    victoryMusic['white-zhangcheng'] = document.getElementById('victory-music-white-zhangcheng');
+    victoryMusic['white-skill5'] = document.getElementById('victory-music-white-skill5');
+    victoryMusic['white-ziqi'] = document.getElementById('victory-music-white-ziqi');
+    victoryMusic['white-wangjinbao'] = document.getElementById('victory-music-white-wangjinbao');
+    
+    // 设置音乐文件路径（这里先留空，后续可以添加）
+    characterMusic['black-zhangcheng'].src = 'music/white-zhangcheng.MP3';
+    characterMusic['black-skill5'].src = 'music/white-skill5.MP3';
+    characterMusic['black-ziqi'].src = 'music/black-ziqi.MP3';
+    characterMusic['black-wangjinbao'].src = 'music/white-wangjinbao.MP3';
+    characterMusic['white-zhangcheng'].src = 'music/white-zhangcheng.MP3';
+    characterMusic['white-skill5'].src = 'music/white-skill5.MP3';
+    characterMusic['white-ziqi'].src = 'music/white-ziqi.MP3';
+    characterMusic['white-wangjinbao'].src = 'music/white-wangjinbao.MP3';
+}
+
+// 播放角色音乐
+function playCharacterMusic(musicKey) {
+
+    const music = characterMusic[musicKey];
+    
+    if (music && music.src) {
+        music.currentTime = 0;
+        music.play().catch(e => console.log(`角色音乐播放失败:`, e));
+    }
+}
+
+// 播放胜利音乐
+function playVictoryMusic(playerType, color) {
+    const musicKey = `${color}-${playerType}`;
+    const music = victoryMusic[musicKey];
+    
+    if (music && music.src) {
+        music.currentTime = 0;
+        music.play().catch(e => console.log(`胜利音乐播放失败:`, e));
+    }
+}
+
+// 播放技能音效
+function playSkillSound(skillNumber) {
+    if (skillNumber === 5) return; // 技能5不播放音效
+    
+    const skillSound = skillSounds[skillNumber - 1];
+    if (skillSound) {
+        skillSound.currentTime = 0;
+        skillSound.play().catch(e => console.log(`技能${skillNumber}音效播放失败:`, e));
+    }
+}
+
+// 播放移除音效
+function playRemoveSound(skillType) {
+    let soundToPlay = removeSound; // 默认移除音效
+    
+    if (skillType === 'skill1' && skill1RemoveSound) {
+        soundToPlay = skill1RemoveSound;
+    } else if (skillType === 'skill7' && skill7RemoveSound) {
+        soundToPlay = skill7RemoveSound;
+    }
+    
+    if (soundToPlay) {
+        soundToPlay.currentTime = 0;
+        soundToPlay.play().catch(e => console.log(`${skillType}移除音效播放失败:`, e));
+    }
+}
+
+function addActionLog(action, isAI = false) {
+    const timestamp = new Date().toLocaleTimeString();
+    const playerName = playerNames[currentPlayer - 1];
+    const playerClass = currentPlayer === 1 ? 'log-black' : 'log-white';
+    
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry ${playerClass}`;
+    
+    // 如果是AI操作，添加AI标识
+    if (isAI) {
+        logEntry.textContent = `[${timestamp}] ${playerName}(AI): ${action}`;
+    } else {
+        logEntry.textContent = `[${timestamp}] ${playerName}: ${action}`;
+    }
+    
+    // 将新记录插入到顶部（最新信息显示在最上面）
+    if (actionLogContent.firstChild) {
+        actionLogContent.insertBefore(logEntry, actionLogContent.firstChild);
+    } else {
+        actionLogContent.appendChild(logEntry);
+    }
+    
+    // 保持滚动条在顶部，显示最新信息
+    actionLogContent.scrollTop = 0;
+    
+    actionLog.push({
+        player: currentPlayer,
+        action: action,
+        timestamp: timestamp,
+        isAI: isAI
+    });
+}
+
+// 更新AI思考过程显示
+function updateAIThinkingLog(content) {
+    if (aiThinkingLog) {
+        aiThinkingLog.textContent = content;
+    }
+}
+
+// 更新AI思考显示模块的可见性
+function updateAIThinkingDisplay() {
+    const aiThinkingContainer = document.querySelector('.ai-thinking-container');
+    if (aiThinkingContainer) {
+        const hasAI = playerTypes.includes('ai');
+        aiThinkingContainer.style.display = hasAI ? 'block' : 'none';
+        
+        if (!hasAI) {
+            updateAIThinkingLog('');
+        }
+    }
+}
+
+// 绘制棋盘
+function drawBoard() {
+    if (boardImageMode && BOARD_IMAGE_URL) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.style.backgroundImage = `url(${BOARD_IMAGE_URL})`;
+        canvas.classList.add('board-image');
+        drawPieces();
+        drawSelectedPieces();
+    } else {
+        canvas.style.backgroundImage = 'none';
+        canvas.classList.remove('board-image');
+        ctx.fillStyle = '#deb887';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        drawCoordinates();
+        drawGridLines();
+        drawStarPositions();
+        drawBrokenPositions();
+        drawBlockedPositions();
+        drawPieces();
+        drawSelectedPieces();
+        
+        if (hoveredPiece && board[hoveredPiece.row][hoveredPiece.col] === currentPlayer) {
+            drawSkillRange(hoveredPiece);
+        }
+    }
+}
+
+// 绘制坐标
+function drawCoordinates() {
+    ctx.fillStyle = '#8b4513';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        const x = i * CELL_SIZE + CELL_SIZE / 2;
+        const y = (BOARD_SIZE - 1) * CELL_SIZE + CELL_SIZE / 2 + 20;
+        ctx.fillText(String.fromCharCode(65 + i), x, y);
+    }
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        const x = (BOARD_SIZE - 1) * CELL_SIZE + CELL_SIZE / 2 + 20;
+        const y = i * CELL_SIZE + CELL_SIZE / 2;
+        ctx.fillText((i + 1).toString(), x, y);
+    }
+}
+
+// 绘制网格线
+function drawGridLines() {
+    ctx.strokeStyle = '#8b4513';
+    ctx.lineWidth = 1;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        ctx.beginPath();
+        ctx.moveTo(CELL_SIZE / 2, i * CELL_SIZE + CELL_SIZE / 2);
+        ctx.lineTo((BOARD_SIZE - 1) * CELL_SIZE + CELL_SIZE / 2, i * CELL_SIZE + CELL_SIZE / 2);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(i * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE / 2);
+        ctx.lineTo(i * CELL_SIZE + CELL_SIZE / 2, (BOARD_SIZE - 1) * CELL_SIZE + CELL_SIZE / 2);
+        ctx.stroke();
+    }
+}
+
+// 绘制星位
+function drawStarPositions() {
+    ctx.fillStyle = '#8b4513';
+    STAR_POSITIONS.forEach(([x, y]) => {
+        ctx.beginPath();
+        ctx.arc(x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2, 4, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+// 绘制摔坏的位置
+function drawBrokenPositions() {
+    brokenPositions.forEach(pos => {
+        const x = pos.col * CELL_SIZE + CELL_SIZE / 2;
+        const y = pos.row * CELL_SIZE + CELL_SIZE / 2;
+        
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y - 10);
+        ctx.lineTo(x + 10, y + 10);
+        ctx.moveTo(x + 10, y - 10);
+        ctx.lineTo(x - 10, y + 10);
+        ctx.stroke();
+    });
+}
+
+// 绘制被封锁的位置
+function drawBlockedPositions() {
+    blockedPositions.forEach(pos => {
+        const x = pos.col * CELL_SIZE + CELL_SIZE / 2;
+        const y = pos.row * CELL_SIZE + CELL_SIZE / 2;
+        
+        ctx.fillStyle = '#ff0000';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('山东', x, y);
+    });
+}
+
+// 绘制棋子
+function drawPieces() {
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] !== 0) {
+                drawPiece(i, j, board[i][j], moveNumbers[i][j]);
+            }
+        }
+    }
+}
+
+// 绘制单个棋子
+function drawPiece(row, col, player, moveNumber) {
+    const x = col * CELL_SIZE + CELL_SIZE / 2;
+    const y = row * CELL_SIZE + CELL_SIZE / 2;
+    
+    ctx.beginPath();
+    ctx.arc(x, y, PIECE_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = player === 1 ? '#000' : '#fff';
+    ctx.fill();
+    
+    const isHighlighted = highlightedPieces.some(p => p.row === row && p.col === col);
+    const isSkill9Highlighted = skill9HighlightedPiece && skill9HighlightedPiece.row === row && skill9HighlightedPiece.col === col;
+    
+    if (isHighlighted || isSkill9Highlighted) {
+        ctx.strokeStyle = 'gold';
+        ctx.lineWidth = 3;
+    } else {
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+    }
+    ctx.stroke();
+    
+    if (dripStoneCount[row][col] >= 1) {
+        ctx.beginPath();
+        ctx.arc(x, y, PIECE_RADIUS * 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = '#deb887';
+        ctx.fill();
+    }
+    
+    ctx.fillStyle = player === 1 ? '#fff' : '#000';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(moveNumber, x, y);
+}
+
+// 绘制已选择的棋子
+function drawSelectedPieces() {
+    selectedPieces.forEach(pos => {
+        const x = pos.col * CELL_SIZE + CELL_SIZE / 2;
+        const y = pos.row * CELL_SIZE + CELL_SIZE / 2;
+        
+        ctx.beginPath();
+        ctx.arc(x, y, PIECE_RADIUS + 3, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ffcc00';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+}
+
+// 绘制技能范围
+function drawSkillRange(piece) {
+    const x = piece.col * CELL_SIZE + CELL_SIZE / 2;
+    const y = piece.row * CELL_SIZE + CELL_SIZE / 2;
+    
+    ctx.beginPath();
+    ctx.arc(x, y, SKILL_RANGE * CELL_SIZE, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === enemyPlayer) {
+                const distance = Math.abs(i - piece.row) + Math.abs(j - piece.col);
+                if (distance <= SKILL_RANGE) {
+                    const enemyX = j * CELL_SIZE + CELL_SIZE / 2;
+                    const enemyY = i * CELL_SIZE + CELL_SIZE / 2;
+                    
+                    ctx.beginPath();
+                    ctx.arc(enemyX, enemyY, PIECE_RADIUS + 2, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+}
+
+// 播放音效
+function playSound(sound) {
+    if (sound) {
+        sound.currentTime = 0;
+        sound.play().catch(e => console.log("音效播放失败:", e));
+    }
+}
+
+// 处理点击事件
+function handleClick(event) {
+    if (gameState !== 'playing' || gameOver || skill2TimerActive || skill12TimerActive || 
+        timeReversalInProgress || playerTypes[currentPlayer - 1].startsWith('ai')) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    const col = Math.round((x - CELL_SIZE / 2) / CELL_SIZE);
+    const row = Math.round((y - CELL_SIZE / 2) / CELL_SIZE);
+    
+    if (usingSkill > 0 && usingSkill !== 2 && usingSkill !== 5 && usingSkill !== 9 && usingSkill !== 10 && usingSkill !== 11 && usingSkill !== 12) {
+        handleSkillSelection(row, col);
+        return;
+    }
+    
+    if (usingSkill === 10) {
+        handleSkill10(row, col);
+        return;
+    }
+    
+    if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE && 
+        board[row][col] === 0 && !isPositionBroken(row, col) && !isPositionBlocked(row, col)) {
+        placePiece(row, col);
+    }
+}
+
+// 放置棋子
+function placePiece(row, col) {
+    if (gameState !== 'playing' || timeReversalInProgress) return;
+    
+    board[row][col] = currentPlayer;
+    moveCount[currentPlayer - 1]++;
+    moveNumbers[row][col] = moveCount[currentPlayer - 1];
+    
+    // 记录落子历史
+    piecePlacementHistory.push({
+        row: row,
+        col: col,
+        player: currentPlayer,
+        moveNumber: moveCount[currentPlayer - 1]
+    });
+    
+    // 添加最新落子高亮（2回合）
+    addHighlightedPiece(row, col, 2);
+    
+    playSound(moveSound);
+    
+    const position = `${String.fromCharCode(65 + col)}${row + 1}`;
+    const isAI = playerTypes[currentPlayer - 1].startsWith('ai');
+    addActionLog(`落子于 ${position}`, isAI);
+    
+    updateBackgroundMusicVolume();
+    drawBoard();
+    
+    checkSkill1Activation(row, col);
+    
+    if (!checkWinConditions(row, col)) {
+        switchPlayer();
+    }
+}
+
+// 检查胜利条件
+function checkWinConditions(row, col) {
+    if (checkWin(row, col, currentPlayer)) {
+        endGame(`${playerNames[currentPlayer - 1]}获胜！`);
+        return true;
+    }
+    
+    if (checkStarWin(currentPlayer)) {
+        endGame(`${playerNames[currentPlayer - 1]}占据4个星位获胜！`);
+        return true;
+    }
+    
+    if (checkBoardFull()) {
+        endGame(`棋盘已满，${playerNames[1]}获胜！`);
+        return true;
+    }
+    
+    return false;
+}
+
+// 开始时光倒流
+function startTimeReversal() {
+    if (piecePlacementHistory.length === 0 || timeReversalInProgress) return;
+    
+    timeReversalInProgress = true;
+    
+    // 禁用棋盘和按钮
+    canvas.style.pointerEvents = 'none';
+    const skillButtons = document.querySelectorAll('.skill-btn');
+    skillButtons.forEach(btn => {
+        if (btn.id !== 'restart') {
+            btn.disabled = true;
+        }
+    });
+    
+    restartButton.disabled = true;
+    
+    updateStatusDisplay("时光倒流中", "棋子正在消失...");
+    
+    // 执行时光倒流动画
+    reverseTime();
+}
+
+// 执行时光倒流
+function reverseTime() {
+    if (piecePlacementHistory.length === 0) {
+        // 倒流完成，重置游戏
+        finishTimeReversal();
+        return;
+    }
+    
+    const lastMove = piecePlacementHistory.pop();
+    const { row, col } = lastMove;
+    
+    // 添加移除动画
+    const pieceEl = document.createElement('div');
+    pieceEl.className = `removed-piece ${board[row][col] === 1 ? 'black-piece' : 'white-piece'} piece-fade-out`;
+    pieceEl.textContent = moveNumbers[row][col];
+    pieceEl.style.position = 'absolute';
+    
+    const canvasRect = canvas.getBoundingClientRect();
+    const x = col * CELL_SIZE + CELL_SIZE / 2 - 10 + canvasRect.left;
+    const y = row * CELL_SIZE + CELL_SIZE / 2 - 10 + canvasRect.top;
+    
+    pieceEl.style.left = `${x}px`;
+    pieceEl.style.top = `${y}px`;
+    pieceEl.style.width = '20px';
+    pieceEl.style.height = '20px';
+    
+    document.body.appendChild(pieceEl);
+    
+    // 从棋盘移除棋子
+    board[row][col] = 0;
+    moveNumbers[row][col] = 0;
+    
+    // 更新棋盘显示
+    drawBoard();
+    
+    // 播放移除音效
+    playSound(removeSound);
+    
+    // 延迟执行下一个移除
+    setTimeout(() => {
+        // 移除动画元素
+        document.body.removeChild(pieceEl);
+        reverseTime();
+    }, 500);
+}
+
+// 完成时光倒流
+function finishTimeReversal() {
+    // 完全重置游戏状态但不重新初始化所有变量
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            board[i][j] = 0;
+            moveNumbers[i][j] = 0;
+        }
+    }
+    
+    // 重置其他状态
+    currentPlayer = 1;
+    gameOver = false;
+    usingSkill = 0;
+    selectedPieces = [];
+    selectedRemovedPieces = [];
+    moveCount = [0, 0];
+    brokenPositions = [];
+    blockedPositions = [];
+    removedPieces = [];
+    piecePlacementHistory = [];
+    timeReversalInProgress = false;
+    
+    // 重绘棋盘
+    drawBoard();
+    updateRemovedPiecesDisplay();
+    
+    addActionLog("时光倒流完成，棋盘已清空");
+    
+    // 回到对局状态
+    setGameState('playing');
+}
+
+// 结束游戏
+function endGame(message) {
+    gameOver = true;
+    updateStatusDisplay(message, "");
+
+    const isAI = playerTypes[currentPlayer - 1].startsWith('ai');
+    addActionLog(message, isAI);
+
+    // 进入结算状态
+    setGameState('gameOver');
+    
+    return true;
+}
+
+// 检查棋盘是否已满
+function checkBoardFull() {
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === 0 && !isPositionBroken(i, j) && !isPositionBlocked(i, j)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// 检查是否获胜（五连珠）
+function checkWin(row, col, player) {
+    const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+    
+    for (const [dx, dy] of directions) {
+        let count = 1;
+        
+        for (let i = 1; i < 5; i++) {
+            const newRow = row + dx * i;
+            const newCol = col + dy * i;
+            
+            if (newRow >= 0 && newRow < BOARD_SIZE && newCol >= 0 && newCol < BOARD_SIZE && 
+                board[newRow][newCol] === player) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        
+        for (let i = 1; i < 5; i++) {
+            const newRow = row - dx * i;
+            const newCol = col - dy * i;
+            
+            if (newRow >= 0 && newRow < BOARD_SIZE && newCol >= 0 && newCol < BOARD_SIZE && 
+                board[newRow][newCol] === player) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        
+        if (count >= 5) return true;
+    }
+    
+    return false;
+}
+
+// 检查是否占据4个星位获胜
+function checkStarWin(player) {
+    return STAR_POSITIONS.filter(([row, col]) => board[row][col] === player).length >= 4;
+}
+
+// 检查是否差一步获胜
+function checkOneStepWin(player) {
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === 0) {
+                board[i][j] = player;
+                if (checkWin(i, j, player)) {
+                    board[i][j] = 0;
+                    return true;
+                }
+                board[i][j] = 0;
+            }
+        }
+    }
+    return false;
+}
+
+// 切换玩家
+function switchPlayer() {
+    updateBlockedPositions();
+    updateHighlightedPieces();
+    
+    if (skill9HighlightedPiece) {
+        skill9HighlightTurns--;
+        if (skill9HighlightTurns <= 0) {
+            skill9HighlightedPiece = null;
+        }
+    }
+    
+    if (boardImageTurns > 0) {
+        boardImageTurns--;
+        if (boardImageTurns <= 0) {
+            boardImageMode = false;
+        }
+    }
+    
+    updateSkill8Restore();
+    
+    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    const playerName = playerNames[currentPlayer - 1];
+    
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    if (checkOneStepWin(enemyPlayer)) {
+        updateStatusDisplay(`${playerName}回合`, `${playerNames[enemyPlayer - 1]}要爆了！`);
+        statusDisplay.classList.add('warning');
+    } else {
+        updateStatusDisplay(`${playerName}回合`, "");
+        statusDisplay.classList.remove('warning');
+    }
+    
+    statusDisplay.className = currentPlayer === 1 ? 'status-container black-turn' : 'status-container white-turn';
+    updateSkillButtons();
+    drawBoard();
+    
+    // 更新图片显示
+    updateImageDisplay();
+    
+    // 修复AI回合检测逻辑
+    const currentPlayerType = playerTypes[currentPlayer - 1];
+    console.log(`切换玩家: ${playerName}, 类型: ${currentPlayerType}, 是AI: ${isAI(currentPlayerType)}`);
+    
+    if (isAI(currentPlayerType) && !gameOver) {
+        console.log(`触发AI移动: ${currentPlayerType}`);
+        setTimeout(() => {
+            if (typeof aiMakeMove === 'function') {
+                aiMakeMove();
+            }
+        }, 500);
+    }
+}
+
+// 初始化事件监听
+function initEventListeners() {
+    canvas.addEventListener('click', handleClick);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    restartButton.addEventListener('click', handleRestartRequest);
+    
+    const skillButtons = [
+        document.getElementById('skill1-btn'),
+        document.getElementById('skill2-btn'),
+        document.getElementById('skill3-btn'),
+        document.getElementById('skill4-btn'),
+        document.getElementById('skill5-btn'),
+        document.getElementById('skill6-btn'),
+        document.getElementById('skill7-btn'),
+        document.getElementById('skill8-btn'),
+        document.getElementById('skill9-btn'),
+        document.getElementById('skill10-btn'),
+        document.getElementById('skill11-btn'),
+        document.getElementById('skill12-btn')
+    ];
+    
+    skillButtons.forEach((button, index) => {
+        button.addEventListener('click', () => useSkill(index + 1));
+    });
+    
+    // 添加玩家类型选择框的事件监听 - 修改为立即播放角色音乐
+    const blackTypeSelect = document.getElementById('black-player-type');
+    const whiteTypeSelect = document.getElementById('white-player-type');
+    
+    if (blackTypeSelect) {
+        blackTypeSelect.addEventListener('change', function() {
+            updatePlayerType(0, this.value);
+            // 立即播放黑方角色音乐
+            if (isAI(this.value)) {
+                playCharacterMusic(this.value);
+            }
+        });
+    }
+    
+    if (whiteTypeSelect) {
+        whiteTypeSelect.addEventListener('change', function() {
+            updatePlayerType(1, this.value);
+            // 立即播放白方角色音乐
+            if (isAI(this.value)) {
+                playCharacterMusic(this.value);
+            }
+        });
+    }
+    
+    blackPlayerNameInput.addEventListener('change', updatePlayerNames);
+    whitePlayerNameInput.addEventListener('change', updatePlayerNames);
+}
+
+// 处理鼠标移动事件
+let lastHoveredPiece = null;
+function handleMouseMove(event) {
+    if (gameState !== 'playing' || gameOver || skill2TimerActive || skill12TimerActive || playerTypes[currentPlayer - 1] === 'ai') return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    const col = Math.round((x - CELL_SIZE / 2) / CELL_SIZE);
+    const row = Math.round((y - CELL_SIZE / 2) / CELL_SIZE);
+    
+    if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE && board[row][col] !== 0) {
+        hoveredPiece = { row, col };
+    } else {
+        hoveredPiece = null;
+    }
+    
+    if (!lastHoveredPiece && !hoveredPiece) return;
+    if (lastHoveredPiece && hoveredPiece && lastHoveredPiece.row === hoveredPiece.row && lastHoveredPiece.col === hoveredPiece.col) return;
+    
+    lastHoveredPiece = hoveredPiece;
+    drawBoard();
+}
+
+// 修改重新开始按钮处理函数
+function handleRestartRequest() {
+    switch (gameState) {
+        case 'initial':
+            // 状态1 -> 状态2：开始游戏
+            setGameState('playing');
+            break;
+            
+        case 'playing':
+            // 状态2：触发时光倒流
+            startTimeReversal();
+            break;
+            
+        case 'gameOver':
+            // 状态3 -> 状态1：颁奖结束，回到初始状态
+            initBoard();
+            setGameState('initial');
+            addActionLog("颁奖结束，游戏重置");
+            break;
+    }
+}
+
+function getAIName(aiType) {
+    const aiNames = {
+        'black-zhangcheng': '黑张呈',
+        'black-skill5': '黑技能五', 
+        'black-ziqi': '黑子棋',
+        'black-wangjinbao': '黑王金宝',
+        'white-zhangcheng': '白张呈',
+        'white-skill5': '白技能五',
+        'white-ziqi': '白子棋',
+        'white-wangjinbao': '白王金宝'
+    };
+    
+    return aiNames[aiType] || 'AI';
+}
+
+// 位置检查函数
+function isPositionBroken(row, col) {
+    return brokenPositions.some(pos => pos.row === row && pos.col === col);
+}
+
+function isPositionBlocked(row, col) {
+    return blockedPositions.some(pos => pos.row === row && pos.col === col);
+}
+
+// 检查是否激活对方飞沙走石技能
+function checkSkill1Activation(row, col) {
+    const opponent = currentPlayer === 1 ? 2 : 1;
+    
+    if (skill11Blocked[opponent - 1]) {
+        skill11Blocked[opponent - 1] = false;
+    }
+    
+    if (skill1Used[opponent - 1]) return;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === opponent) {
+                const distance = Math.abs(i - row) + Math.abs(j - col);
+                if (distance <= SKILL_RANGE) {
+                    skill1Active[opponent - 1] = true;
+                    
+                    if (!skill1Used[opponent - 1]) {
+                        skill11Active[currentPlayer - 1] = true;
+                    }
+                    
+                    updateSkillButtons();
+                    return;
+                }
+            }
+        }
+    }
+}
+
+// 添加高亮棋子
+function addHighlightedPiece(row, col, turns = 2) {
+    const existingIndex = highlightedPieces.findIndex(p => p.row === row && p.col === col);
+    if (existingIndex !== -1) {
+        highlightedPieces[existingIndex].turns = turns;
+    } else {
+        highlightedPieces.push({row, col, turns});
+    }
+}
+
+// 更新高亮棋子的回合数
+function updateHighlightedPieces() {
+    highlightedPieces.forEach(piece => piece.turns--);
+    highlightedPieces = highlightedPieces.filter(piece => piece.turns > 0);
+}
+
+// 更新封锁位置的状态
+function updateBlockedPositions() {
+    blockedPositions.forEach(pos => pos.turns--);
+    blockedPositions = blockedPositions.filter(pos => pos.turns > 0);
+}
+
+// 更新拾金不昧技能的复原逻辑
+function updateSkill8Restore() {
+    skill8RemovedPieces.forEach(piece => {
+        piece.restoreTurns--;
+        
+        if (piece.restoreTurns <= 0) {
+            if (board[piece.row][piece.col] === 0 && !isPositionBroken(piece.row, piece.col)) {
+                board[piece.row][piece.col] = piece.player;
+                moveNumbers[piece.row][piece.col] = piece.moveNumber;
+                
+                addHighlightedPiece(piece.row, piece.col, 2);
+                
+                const position = `${String.fromCharCode(65 + piece.col)}${piece.row + 1}`;
+                addActionLog(`拾金不昧复原: 棋子 ${position} 已复原`);
+                
+                playSound(moveSound);
+                checkWinConditions(piece.row, piece.col);
+            } else {
+                const position = `${String.fromCharCode(65 + piece.col)}${piece.row + 1}`;
+                addActionLog(`拾金不昧复原: 棋子 ${position} 复原失败`);
+            }
+        }
+    });
+    
+    skill8RemovedPieces = skill8RemovedPieces.filter(piece => piece.restoreTurns > 0);
+    updateBackgroundMusicVolume();
+    drawBoard();
+}
+
+// 更新状态显示
+function updateStatusDisplay(turnText, additionalText) {
+    turnInfo.textContent = turnText;
+    additionalInfo.textContent = additionalText;
+}
+
+// 更新玩家名称
+function updatePlayerNames() {
+    const blackType = playerTypes[0];
+    const whiteType = playerTypes[1];
+    
+    // 更新显示名称
+    if (isAI(blackType)) {
+        const aiName = getAIName(blackType);
+        playerNames[0] = aiName;
+        blackPlayerNameInput.value = aiName;
+    } else {
+        playerNames[0] = '子棋';
+        blackPlayerNameInput.value = '子棋';
+    }
+    
+    if (isAI(whiteType)) {
+        const aiName = getAIName(whiteType);
+        playerNames[1] = aiName;
+        whitePlayerNameInput.value = aiName;
+    } else {
+        playerNames[1] = '张呈';
+        whitePlayerNameInput.value = '张呈';
+    }
+    
+    playerSubtitle.textContent = `外练筋骨皮，内练五子棋`;
+    if (gameState === 'playing' && !gameOver) {
+        updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, additionalInfo.textContent);
+    }
+}
+
+function getAIName(aiType) {
+    const aiNames = {
+        'black-zhangcheng': '黑张呈',
+        'black-skill5': '黑技能五', 
+        'black-ziqi': '黑子棋',
+        'black-wangjinbao': '黑王金宝',
+        'white-zhangcheng': '白张呈',
+        'white-skill5': '白技能五',
+        'white-ziqi': '白子棋',
+        'white-wangjinbao': '白王金宝'
+    };
+    
+    return aiNames[aiType] || 'AI';
+}
+
+// 更新被移除棋子的显示
+function updateRemovedPiecesDisplay() {
+    shichahaiMap.innerHTML = '';
+    removedPiecesContainer.innerHTML = '';
+    
+    removedPieces.forEach((piece, index) => {
+        const pieceEl = document.createElement('div');
+        pieceEl.className = `removed-piece ${piece.player === 1 ? 'black-piece' : 'white-piece'} ${selectedRemovedPieces.some(p => p.index === index) ? 'selected' : ''}`;
+        pieceEl.textContent = piece.moveNumber;
+        pieceEl.style.position = 'absolute';
+        pieceEl.style.left = `${10 + (index % 10) * 18}px`;
+        pieceEl.style.top = `${10 + Math.floor(index / 10) * 18}px`;
+        
+        shichahaiMap.appendChild(pieceEl);
+    });
+    
+    const blackCount = removedPieces.filter(p => p.player === 1).length;
+    const whiteCount = removedPieces.filter(p => p.player === 2).length;
+    
+    if (blackCount > 0) {
+        const blackStat = document.createElement('div');
+        blackStat.className = 'removed-piece black-piece';
+        blackStat.textContent = blackCount;
+        removedPiecesContainer.appendChild(blackStat);
+    }
+    
+    if (whiteCount > 0) {
+        const whiteStat = document.createElement('div');
+        whiteStat.className = 'removed-piece white-piece';
+        whiteStat.textContent = whiteCount;
+        removedPiecesContainer.appendChild(whiteStat);
+    }
+}
+
+// 更新背景音乐音量
+function updateBackgroundMusicVolume() {
+    if (backgroundMusicPlaying) {
+        backgroundMusic.volume = 1.0;
+    }
+}
+
+// 检查所有技能是否都已使用过
+function checkAllSkillsUsed() {
+    const allUsed = globalSkillsUsed.every(used => used === true);
+    
+    if (allUsed && !allSkillsUsed) {
+        allSkillsUsed = true;
+        updateStatusDisplay("所有技能已使用", "可重新开始游戏");
+        addActionLog("所有技能已使用，可重新开始游戏");
+    }
+}
+
+// 完成技能使用
+function finishSkill() {
+    usingSkill = 0;
+    selectedPieces = [];
+    selectedRemovedPieces = [];
+    skill1Active[currentPlayer - 1] = false;
+    skill11Active[currentPlayer - 1] = false;
+    updateSkillButtons();
+}
+
+// 使用技能
+function useSkill(skillNumber) {
+    if (gameState !== 'playing' || gameOver || skill2TimerActive || skill12TimerActive || playerTypes[currentPlayer - 1] === 'ai') return;
+    
+    if (skillNumber !== 5 && skillNumber !== 13) {
+        playSkillSound(skillNumber);
+    }
+    
+    switch (skillNumber) {
+        case 1: useSkill1(); break;
+        case 2: useSkill2(); break;
+        case 3: useSkill3(); break;
+        case 4: useSkill4(); break;
+        case 5: useSkill5(); break;
+        case 6: useSkill6(); break;
+        case 7: useSkill7(); break;
+        case 8: useSkill8(); break;
+        case 9: useSkill9(); break;
+        case 10: useSkill10(); break;
+        case 11: useSkill11(); break;
+        case 12: useSkill12(); break;
+        case 13: useSkill13(); break;
+    }
+}
+
+// 技能1: 飞沙走石
+function useSkill1() {
+    if (!skill1Active[currentPlayer - 1] || skill1Used[currentPlayer - 1] || skill11Blocked[currentPlayer - 1]) return;
+    usingSkill = 1;
+    updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "飞沙走石 - 请点击一个己方棋子");
+}
+
+// 技能2: 静如止水
+function useSkill2() {
+    if (skill2Used[currentPlayer - 1] || !backgroundMusicPlaying) return;
+    
+    if (backgroundMusicPlaying) {
+        backgroundMusic.pause();
+        backgroundMusicPlaying = false;
+    } else {
+        backgroundMusic.play().catch(e => console.log("背景音乐播放失败:", e));
+        backgroundMusicPlaying = true;
+    }
+    
+    skill2Used[currentPlayer - 1] = true;
+    globalSkillsUsed[1] = true;
+    
+    updateSkillButtons();
+    
+    const playerName = playerNames[currentPlayer - 1];
+    addActionLog(`使用静如止水，跳过敌方回合`);
+    
+    canvas.style.pointerEvents = 'none';
+    const skillButtons = document.querySelectorAll('.skill-btn');
+    skillButtons.forEach(btn => btn.disabled = true);
+    
+    skill2TimerActive = true;
+    switchPlayer();
+    skill2Timer = setTimeout(() => {
+        canvas.style.pointerEvents = 'auto';
+        updateSkillButtons();
+        skill2TimerActive = false;
+        skill2Timer = null;
+        updateStatusDisplay(`${playerNames[currentPlayer-1]}回合`, "敌方被静如止水定住了1小时，回合跳过");
+    }, 3000);
+    switchPlayer();
+}
+
+// 技能3: 力拔山西
+function useSkill3() {
+    if (skill3Used[currentPlayer - 1]) return;
+    usingSkill = 3;
+    updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "力拔山西 - 请点击任意位置");
+}
+
+// 技能4: 东山再起
+function useSkill4() {
+    if (skill4Used[currentPlayer - 1]) return;
+    usingSkill = 4;
+    selectedPieces = [];
+    updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "东山再起 - 请点击两个己方棋子");
+}
+
+// 技能5: 张兴朝
+function useSkill5() {
+    if (skill5Used[currentPlayer - 1]) return;
+    
+    backgroundMusic.volume = 1.0;
+    backgroundMusic.play().catch(e => console.log("背景音乐播放失败:", e));
+    backgroundMusicPlaying = true;
+    
+    skill5Used[currentPlayer - 1] = true;
+    globalSkillsUsed[4] = true;
+    skill7Active[currentPlayer - 1] = true;
+    
+    updateSkillButtons();
+    
+    const playerName = playerNames[currentPlayer - 1];
+    updateStatusDisplay(`${playerName}回合`, "张兴朝 - 已激活保洁上门技能，背景音乐已开启");
+    addActionLog("使用张兴朝，激活保洁上门技能，并开启背景音乐");
+    
+    switchPlayer();
+}
+
+// 技能6: 调呈离山
+function useSkill6() {
+    if (skill6Used[currentPlayer - 1]) return;
+    usingSkill = 6;
+    selectedPieces = [];
+    updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "调呈离山 - 请点击一个敌方棋子");
+}
+
+// 技能7: 保洁上门
+function useSkill7() {
+    if (!skill7Active[currentPlayer - 1] || skill7Used[currentPlayer - 1]) return;
+    usingSkill = 7;
+    updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "保洁上门 - 请点击一列清除该列所有棋子");
+}
+
+// 技能8: 拾金不昧
+function useSkill8() {
+    if (skill8Used[currentPlayer - 1] || !canUseSkill8(currentPlayer)) return;
+    usingSkill = 8;
+    selectedPieces = [];
+    updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "拾金不昧 - 请选择两个敌方棋子");
+}
+
+// 技能9: 两极反转
+function useSkill9() {
+    if (skill9Used[currentPlayer - 1]) return;
+    
+    boardImageMode = !boardImageMode;
+    boardImageTurns = 2;
+    
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    const enemyPieces = [];
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === enemyPlayer) {
+                enemyPieces.push({row: i, col: j});
+            }
+        }
+    }
+    
+    if (enemyPieces.length > 0) {
+        const randomIndex = Math.floor(Math.random() * enemyPieces.length);
+        const selectedPiece = enemyPieces[randomIndex];
+        
+        board[selectedPiece.row][selectedPiece.col] = currentPlayer;
+        skill9HighlightedPiece = {row: selectedPiece.row, col: selectedPiece.col};
+        skill9HighlightTurns = 2;
+        
+        playSound(moveSound);
+        
+        const position = `${String.fromCharCode(65 + selectedPiece.col)}${selectedPiece.row + 1}`;
+        addActionLog(`使用两极反转，将敌方棋子 ${position} 变为己方棋子`);
+        
+        updateBackgroundMusicVolume();
+        drawBoard();
+        
+        if (!checkWinConditions(selectedPiece.row, selectedPiece.col)) {
+            skill9Used[currentPlayer - 1] = true;
+            globalSkillsUsed[8] = true;
+            updateSkillButtons();
+            updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "两极反转 - 敌方棋子已变为己方，棋盘状态已切换");
+            switchPlayer();
+        } else {
+            skill9Used[currentPlayer - 1] = true;
+            globalSkillsUsed[8] = true;
+            updateSkillButtons();
+        }
+    } else {
+        skill9Used[currentPlayer - 1] = true;
+        globalSkillsUsed[8] = true;
+        updateSkillButtons();
+        updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "两极反转 - 棋盘状态已切换");
+        addActionLog("使用两极反转，切换棋盘状态");
+        switchPlayer();
+    }
+    skill9Timer = setTimeout(() => {
+        canvas.style.pointerEvents = 'auto';
+        skill9TimerActive = false;
+        skill9Timer = null;
+        }, 3000);
+}
+
+// 技能10: 水滴石穿
+function useSkill10() {
+    usingSkill = 10;
+    updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "水滴石穿 - 请点击一个棋子");
+}
+
+// 技能11: 擒擒拿拿
+function useSkill11() {
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    
+    if (skill1Used[enemyPlayer - 1]) {
+        updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "擒擒拿拿 - 敌方已使用飞沙走石，无法封锁");
+        return;
+    }
+    
+    if (!skill11Active[currentPlayer - 1] || skill11Used[currentPlayer - 1]) return;
+    
+    skill11Blocked[enemyPlayer - 1] = true;
+    skill11Used[currentPlayer - 1] = true;
+    skill11Active[currentPlayer - 1] = false;
+    
+    addActionLog("使用擒擒拿拿，封锁敌方飞沙走石技能");
+    updateSkillButtons();
+    updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "擒擒拿拿 - 敌方飞沙走石技能已被封锁");
+    
+    switchPlayer();
+}
+
+// 技能12: See You Again 
+function useSkill12() {
+    if (skill12Used[currentPlayer - 1] || !skill12Active[currentPlayer - 1]) return;
+    
+    // 检查什刹海中是否有我方棋子
+    const ownRemovedPieces = removedPieces.filter(piece => piece.player === currentPlayer);
+    if (ownRemovedPieces.length === 0) {
+        updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "See You Again - 什刹海中没有我方棋子");
+        return;
+    }
+    
+    skill12Used[currentPlayer - 1] = true;
+    globalSkillsUsed[11] = true;
+    
+    updateSkillButtons();
+    
+    const playerName = playerNames[currentPlayer - 1];
+    
+    // 随机选择一个己方被移除的棋子
+    const randomPiece = ownRemovedPieces[Math.floor(Math.random() * ownRemovedPieces.length)];
+    
+    // 找到所有可落子的位置
+    const availablePositions = [];
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === 0 && !isPositionBroken(i, j) && !isPositionBlocked(i, j)) {
+                availablePositions.push({row: i, col: j});
+            }
+        }
+    }
+    
+    // 修复：确保 randomPosition 在条件外定义
+    let randomPosition = null;
+    let fromPos = '什刹海';
+    let toPos = '';
+    
+    if (availablePositions.length > 0) {
+        // 随机选择一个位置
+        randomPosition = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+        
+        // 放置棋子
+        board[randomPosition.row][randomPosition.col] = currentPlayer;
+        moveCount[currentPlayer - 1]++;
+        moveNumbers[randomPosition.row][randomPosition.col] = moveCount[currentPlayer - 1];
+        
+        // 从移除列表中删除该棋子
+        const pieceIndex = removedPieces.findIndex(p => 
+            p.player === randomPiece.player && 
+            p.row === randomPiece.row && 
+            p.col === randomPiece.col
+        );
+        if (pieceIndex !== -1) {
+            removedPieces.splice(pieceIndex, 1);
+        }
+        
+        toPos = `${String.fromCharCode(65 + randomPosition.col)}${randomPosition.row + 1}`;
+        addActionLog(`使用See You Again，将棋子从${fromPos}放回${toPos}并跳过敌方回合`);
+        updateStatusDisplay(`${playerName}回合`, `See You Again - 棋子从${fromPos}放回${toPos}，敌方回合跳过`);
+        
+        // 播放音效
+        playSkillSound(12);
+        playSound(moveSound);
+        
+        updateBackgroundMusicVolume();
+        drawBoard();
+        updateRemovedPiecesDisplay();
+    } else {
+        toPos = '（无空位）';
+        addActionLog(`使用See You Again，跳过敌方回合（无空位放置棋子）`);
+        updateStatusDisplay(`${playerName}回合`, "See You Again - 跳过敌方回合（棋盘已满）");
+    }
+    
+    // 禁用棋盘和技能按钮（跳过敌方回合效果）
+    updateStatusDisplay(`${playerName}回合`, "因触发了see you again，敌方昏迷一回合");
+
+    switchPlayer();
+    skill12Timer = setTimeout(() => {
+        canvas.style.pointerEvents = 'auto';
+        updateSkillButtons();
+        skill12TimerActive = false;
+        skill12Timer = null;
+        
+        // 如果有棋子被放回，检查胜利条件
+        if (randomPosition && availablePositions.length > 0) {
+            checkWinConditions(randomPosition.row, randomPosition.col)
+            }
+        updateStatusDisplay(`${playerNames[currentPlayer-1]}回合`, "");
+        }, 3000);
+    switchPlayer();
+}
+
+// 处理技能选择
+function handleSkillSelection(row, col) {
+    if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) return;
+    
+    switch (usingSkill) {
+        case 1: handleSkill1(row, col); break;
+        case 3: handleSkill3(row, col); break;
+        case 4: handleSkill4(row, col); break;
+        case 6: handleSkill6(row, col); break;
+        case 7: handleSkill7(row, col); break;
+        case 8: handleSkill8(row, col); break;
+    }
+}
+
+// 处理技能1
+function handleSkill1(row, col) {
+    const isAI = playerTypes[currentPlayer - 1] === 'ai';
+    
+    if (!isAI && (board[row][col] !== currentPlayer || usingSkill !== 1)) return;
+    
+    if (board[row][col] === currentPlayer) {
+        const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+        let removedCount = 0;
+        
+        for (let i = 0; i < BOARD_SIZE; i++) {
+            for (let j = 0; j < BOARD_SIZE; j++) {
+                if (board[i][j] === enemyPlayer) {
+                    const distance = Math.abs(i - row) + Math.abs(j - col);
+                    if (distance <= SKILL_RANGE) {
+                        removedPieces.push({
+                            player: enemyPlayer,
+                            row: i,
+                            col: j,
+                            moveNumber: moveNumbers[i][j]
+                        });
+                        
+                        board[i][j] = 0;
+                        moveNumbers[i][j] = 0;
+                        removedCount++;
+                    }
+                }
+            }
+        }
+        
+        // 播放技能1特有的移除音效
+        if (removedCount > 0) {
+            playRemoveSound('skill1');
+        }
+        
+        addActionLog(`使用飞沙走石，清除${removedCount}个敌方棋子`, isAI);
+        
+        updateBackgroundMusicVolume();
+        drawBoard();
+        updateRemovedPiecesDisplay();
+        
+        skill1Used[currentPlayer - 1] = true;
+        globalSkillsUsed[0] = true;
+        
+        finishSkill();
+        switchPlayer();
+    }
+}
+
+// 处理技能3
+function handleSkill3(row, col) {
+    const isAI = playerTypes[currentPlayer - 1] === 'ai';
+    
+    if (!isAI && usingSkill !== 3) return;
+    
+    if (board[row][col] !== 0) {
+        removedPieces.push({
+            player: board[row][col],
+            row: row,
+            col: col,
+            moveNumber: moveNumbers[row][col]
+        });
+        
+        board[row][col] = 0;
+        moveNumbers[row][col] = 0;
+    }
+    
+    brokenPositions.push({row, col});
+    
+    playSound(brokenSound);
+    
+    addActionLog(`使用力拔山西，摔坏位置 ${String.fromCharCode(65 + col)}${row + 1}`, isAI);
+    
+    updateBackgroundMusicVolume();
+    drawBoard();
+    updateRemovedPiecesDisplay();
+    
+    skill3Used[currentPlayer - 1] = true;
+    globalSkillsUsed[2] = true;
+    
+    finishSkill();
+    switchPlayer();
+}
+
+// 处理技能4
+function handleSkill4(row, col) {
+    const isAI = playerTypes[currentPlayer - 1] === 'ai';
+    
+    if (selectedPieces.length < 2) {
+        if (board[row][col] === currentPlayer) {
+            const alreadySelected = selectedPieces.some(p => p.row === row && p.col === col);
+            if (!alreadySelected) {
+                selectedPieces.push({row, col});
+                drawBoard();
+                
+                if (selectedPieces.length === 2) {
+                    updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "东山再起 - 请选择一个被摔坏的位置");
+                }
+            }
+        }
+    } else {
+        const isBroken = brokenPositions.some(pos => pos.row === row && pos.col === col);
+        if (isBroken) {
+            selectedPieces.forEach(pos => {
+                removedPieces.push({
+                    player: board[pos.row][pos.col],
+                    row: pos.row,
+                    col: pos.col,
+                    moveNumber: moveNumbers[pos.row][pos.col]
+                });
+                
+                board[pos.row][pos.col] = 0;
+                moveNumbers[pos.row][pos.col] = 0;
+            });
+            
+            board[row][col] = currentPlayer;
+            moveCount[currentPlayer - 1]++;
+            moveNumbers[row][col] = moveCount[currentPlayer - 1];
+            
+            playSound(moveSound);
+            brokenPositions = brokenPositions.filter(pos => !(pos.row === row && pos.col === col));
+            
+            addActionLog(`使用东山再起，修复位置 ${String.fromCharCode(65 + col)}${row + 1}`, isAI);
+            
+            updateBackgroundMusicVolume();
+            drawBoard();
+            updateRemovedPiecesDisplay();
+            
+            if (!checkWinConditions(row, col)) {
+                skill4Used[currentPlayer - 1] = true;
+                globalSkillsUsed[3] = true;
+                finishSkill();
+                switchPlayer();
+            } else {
+                skill4Used[currentPlayer - 1] = true;
+                globalSkillsUsed[3] = true;
+                finishSkill();
+            }
+        }
+    }
+}
+
+// 处理技能6
+function handleSkill6(row, col) {
+    const isAI = playerTypes[currentPlayer - 1] === 'ai';
+    
+    if (selectedPieces.length === 0) {
+        const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+        if (board[row][col] === enemyPlayer) {
+            selectedPieces.push({row, col});
+            updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "调呈离山 - 请选择目标位置");
+        }
+    } else {
+        if (board[row][col] === 0 && !isPositionBroken(row, col) && !isPositionBlocked(row, col)) {
+            const from = selectedPieces[0];
+            const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+            
+            board[from.row][from.col] = 0;
+            board[row][col] = enemyPlayer;
+            
+            moveNumbers[row][col] = moveNumbers[from.row][from.col];
+            moveNumbers[from.row][from.col] = 0;
+            
+            playSound(moveSound);
+            
+            displacedPieces.push({
+                player: enemyPlayer,
+                from: from,
+                to: {row, col}
+            });
+            
+            blockedPositions.push({
+                row: from.row,
+                col: from.col,
+                turns: 2
+            });
+            
+            const fromPos = `${String.fromCharCode(65 + from.col)}${from.row + 1}`;
+            const toPos = `${String.fromCharCode(65 + col)}${row + 1}`;
+            addActionLog(`使用调呈离山，将敌方棋子从 ${fromPos} 移动到 ${toPos}`, isAI);
+            
+            updateBackgroundMusicVolume();
+            drawBoard();
+            
+            skill6Used[currentPlayer - 1] = true;
+            globalSkillsUsed[5] = true;
+            
+            finishSkill();
+            switchPlayer();
+        }
+    }
+}
+
+// 处理技能7
+function handleSkill7(row, col) {
+    const isAI = playerTypes[currentPlayer - 1] === 'ai';
+    
+    if (!isAI && usingSkill !== 7) return;
+    
+    let removedCount = 0;
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        if (board[i][col] !== 0) {
+            removedPieces.push({
+                player: board[i][col],
+                row: i,
+                col: col,
+                moveNumber: moveNumbers[i][col]
+            });
+            
+            board[i][col] = 0;
+            moveNumbers[i][col] = 0;
+            removedCount++;
+        }
+    }
+    
+    // 播放技能7特有的移除音效
+    if (removedCount > 0) {
+        playRemoveSound('skill7');
+    }
+    
+    addActionLog(`使用保洁上门，清除 ${String.fromCharCode(65 + col)} 列所有棋子`, isAI);
+    
+    updateBackgroundMusicVolume();
+    drawBoard();
+    updateRemovedPiecesDisplay();
+    
+    skill7Used[currentPlayer - 1] = true;
+    globalSkillsUsed[6] = true;
+    
+    finishSkill();
+    switchPlayer();
+}
+
+// 处理技能8
+function handleSkill8(row, col) {
+    const isAI = playerTypes[currentPlayer - 1] === 'ai';
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    
+    if (board[row][col] === enemyPlayer) {
+        const alreadySelected = selectedPieces.some(p => p.row === row && p.col === col);
+        if (!alreadySelected) {
+            selectedPieces.push({row, col});
+            drawBoard();
+            
+            if (selectedPieces.length === 2) {
+                executeSkill8(isAI);
+            } else {
+                updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "拾金不昧 - 请再选择一个敌方棋子");
+            }
+        }
+    }
+}
+
+// 执行技能8效果
+function executeSkill8(isAI) {
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    
+    selectedPieces.forEach(pos => {
+        skill8RemovedPieces.push({
+            row: pos.row,
+            col: pos.col,
+            player: enemyPlayer,
+            moveNumber: moveNumbers[pos.row][pos.col],
+            restoreTurns: 3
+        });
+        
+        board[pos.row][pos.col] = 0;
+        moveNumbers[pos.row][pos.col] = 0;
+    });
+    
+    playSound(removeSound);
+    
+    const pos1 = selectedPieces[0];
+    const pos2 = selectedPieces[1];
+    const pos1Str = `${String.fromCharCode(65 + pos1.col)}${pos1.row + 1}`;
+    const pos2Str = `${String.fromCharCode(65 + pos2.col)}${pos2.row + 1}`;
+    addActionLog(`使用拾金不昧，移除敌方棋子 ${pos1Str} 和 ${pos2Str}，将在3回合后尝试复原`, isAI);
+    
+    updateBackgroundMusicVolume();
+    drawBoard();
+    
+    skill8Used[currentPlayer - 1] = true;
+    globalSkillsUsed[7] = true;
+    
+    finishSkill();
+    switchPlayer();
+}
+
+// 处理技能10
+function handleSkill10(row, col) {
+    const isAI = playerTypes[currentPlayer - 1] === 'ai';
+    
+    if (!isAI && usingSkill !== 10) return;
+    
+    if (board[row][col] !== 0) {
+        dripStoneCount[row][col]++;
+        
+        addActionLog(`使用水滴石穿，棋子 ${String.fromCharCode(65 + col)}${row + 1} 被击中 ${dripStoneCount[row][col]} 次`, isAI);
+        
+        if (dripStoneCount[row][col] >= 3) {
+            removeAdjacentPieces(row, col, isAI);
+            dripStoneCount[row][col] = 0;
+        }
+        
+        drawBoard();
+        
+        if (!isAI) {
+            usingSkill = 0;
+            updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "");
+        }
+        
+        switchPlayer();
+    } else {
+        if (!isAI) {
+            updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, "请点击有棋子的位置");
+            usingSkill = 0;
+        }
+    }
+}
+
+// 移除相邻棋子（水滴石穿技能效果）
+function removeAdjacentPieces(row, col, isAI) {
+    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    let removedCount = 0;
+    
+    const piecesToRemove = [];
+    piecesToRemove.push({row, col});
+    
+    directions.forEach(([dx, dy]) => {
+        const newRow = row + dx;
+        const newCol = col + dy;
+        
+        if (newRow >= 0 && newRow < BOARD_SIZE && newCol >= 0 && newCol < BOARD_SIZE) {
+            if (board[newRow][newCol] !== 0) {
+                piecesToRemove.push({row: newRow, col: newCol});
+                
+                directions.forEach(([dx2, dy2]) => {
+                    const newRow2 = newRow + dx2;
+                    const newCol2 = newCol + dy2;
+                    
+                    if (newRow2 >= 0 && newRow2 < BOARD_SIZE && newCol2 >= 0 && newCol2 < BOARD_SIZE) {
+                        if (board[newRow2][newCol2] !== 0) {
+                            const alreadyAdded = piecesToRemove.some(p => p.row === newRow2 && p.col === newCol2);
+                            if (!alreadyAdded) {
+                                piecesToRemove.push({row: newRow2, col: newCol2});
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    });
+    
+    piecesToRemove.forEach(pos => {
+        if (board[pos.row][pos.col] !== 0) {
+            removedPieces.push({
+                player: board[pos.row][pos.col],
+                row: pos.row,
+                col: pos.col,
+                moveNumber: moveNumbers[pos.row][pos.col]
+            });
+            
+            board[pos.row][pos.col] = 0;
+            moveNumbers[pos.row][pos.col] = 0;
+            removedCount++;
+        }
+    });
+    
+    if (removedCount > 0) {
+        playSound(removeSound);
+    }
+    
+    addActionLog(`水滴石穿触发，清除${removedCount}个棋子`, isAI);
+    updateBackgroundMusicVolume();
+    updateRemovedPiecesDisplay();
+}
+
+// 检查是否可以使用的技能8（拾金不昧）
+function canUseSkill8(player) {
+    const enemyPlayer = player === 1 ? 2 : 1;
+    let enemyPieceCount = 0;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === enemyPlayer) {
+                enemyPieceCount++;
+                if (enemyPieceCount >= 2) {
+                    return true;
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+// 更新技能按钮状态
+function updateSkillButtons() {
+    // 如果不是对局状态，禁用所有技能按钮
+    if (gameState !== 'playing') {
+        const skillButtons = document.querySelectorAll('.skill-btn');
+        skillButtons.forEach((button, index) => {
+            if (index !== skillButtons.length - 1) {
+                button.disabled = true;
+                button.className = 'skill-btn';
+            }
+        });
+        return;
+    }
+    
+    // 如果是AI玩家，禁用所有技能按钮
+    if (playerTypes[currentPlayer - 1] === 'ai') {
+        const skillButtons = document.querySelectorAll('.skill-btn');
+        skillButtons.forEach((button, index) => {
+            if (index !== skillButtons.length - 1) {
+                button.disabled = true;
+                button.className = 'skill-btn';
+            }
+        });
+        return;
+    }
+    
+    // 棋盘为图片状态时，所有技能按钮置灰
+    if (boardImageMode) {
+        const skillButtons = document.querySelectorAll('.skill-btn');
+        skillButtons.forEach((button, index) => {
+            if (index !== skillButtons.length - 1) {
+                button.disabled = true;
+                button.className = 'skill-btn';
+            }
+        });
+        return;
+    }
+    
+    const skillButtons = [
+        document.getElementById('skill1-btn'),
+        document.getElementById('skill2-btn'),
+        document.getElementById('skill3-btn'),
+        document.getElementById('skill4-btn'),
+        document.getElementById('skill5-btn'),
+        document.getElementById('skill6-btn'),
+        document.getElementById('skill7-btn'),
+        document.getElementById('skill8-btn'),
+        document.getElementById('skill9-btn'),
+        document.getElementById('skill10-btn'),
+        document.getElementById('skill11-btn'),
+        document.getElementById('skill12-btn'),
+        document.getElementById('skill13-btn')
+    ];
+    
+    // 技能1
+    if (skill1Active[currentPlayer - 1] && !skill1Used[currentPlayer - 1] && !skill11Blocked[currentPlayer - 1]) {
+        skillButtons[0].disabled = false;
+        skillButtons[0].className = 'skill-btn skill-activated';
+        statusDisplay.classList.add('skill-active');
+    } else {
+        skillButtons[0].disabled = true;
+        skillButtons[0].className = 'skill-btn';
+        statusDisplay.classList.remove('skill-active');
+    }
+    
+    // 技能2
+    if (!skill2Used[currentPlayer - 1] && backgroundMusicPlaying) {
+        skillButtons[1].disabled = false;
+        skillButtons[1].className = 'skill-btn skill-available';
+    } else {
+        skillButtons[1].disabled = true;
+        skillButtons[1].className = 'skill-btn';
+    }
+    
+    // 技能3
+    skillButtons[2].disabled = !!skill3Used[currentPlayer - 1];
+    skillButtons[2].className = skill3Used[currentPlayer - 1] ? 'skill-btn' : 'skill-btn skill-available';
+    
+    // 技能4
+    skillButtons[3].disabled = !(!skill4Used[currentPlayer - 1] && brokenPositions.length > 0);
+    skillButtons[3].className = skillButtons[3].disabled ? 'skill-btn' : 'skill-btn skill-available';
+    
+    // 技能5
+    skillButtons[4].disabled = !!skill5Used[currentPlayer - 1];
+    skillButtons[4].className = skill5Used[currentPlayer - 1] ? 'skill-btn' : 'skill-btn skill-available';
+    
+    // 技能6
+    skillButtons[5].disabled = !!skill6Used[currentPlayer - 1];
+    skillButtons[5].className = skill6Used[currentPlayer - 1] ? 'skill-btn' : 'skill-btn skill-available';
+    
+    // 技能7
+    if (skill7Active[currentPlayer - 1] && !skill7Used[currentPlayer - 1]) {
+        skillButtons[6].disabled = false;
+        skillButtons[6].className = 'skill-btn skill-activated';
+    } else {
+        skillButtons[6].disabled = true;
+        skillButtons[6].className = 'skill-btn';
+    }
+    
+    // 技能8
+    skillButtons[7].disabled = !(canUseSkill8(currentPlayer) && !skill8Used[currentPlayer - 1]);
+    skillButtons[7].className = skillButtons[7].disabled ? 'skill-btn' : 'skill-btn skill-available';
+    
+    // 技能9
+    skillButtons[8].disabled = !!skill9Used[currentPlayer - 1];
+    skillButtons[8].className = skill9Used[currentPlayer - 1] ? 'skill-btn' : 'skill-btn skill-available';
+    
+    // 技能10
+    skillButtons[9].disabled = false;
+    skillButtons[9].className = 'skill-btn skill-available';
+    
+    // 技能11
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    if (skill11Active && skill11Active[currentPlayer - 1] && !skill11Used[currentPlayer - 1] && 
+        skill1Active[enemyPlayer - 1] && !skill1Used[enemyPlayer - 1]) {
+        skillButtons[10].disabled = false;
+        skillButtons[10].className = 'skill-btn skill-activated';
+    } else {
+        skillButtons[10].disabled = true;
+        skillButtons[10].className = 'skill-btn';
+    }
+    
+    // 技能12: See You Again
+    const hasOwnRemovedPieces = removedPieces.some(piece => piece.player === currentPlayer);
+    if (hasOwnRemovedPieces && !skill12Used[currentPlayer - 1]) {
+        skill12Active[currentPlayer - 1] = true;
+        skillButtons[11].disabled = false;
+        skillButtons[11].className = 'skill-btn skill-available';
+    } else {
+        skillButtons[11].disabled = true;
+        skillButtons[11].className = 'skill-btn';
+    }
+    
+    // 技能13: 鹰之一手
+    if (skill13Active && !skill13Used[currentPlayer - 1]) {
+        skillButtons[12].disabled = false;
+        skillButtons[12].className = 'skill-btn skill-available';
+    } else {
+        skillButtons[12].disabled = true;
+        skillButtons[12].className = 'skill-btn';
+    }
+    
+    checkAllSkillsUsed();
+}
+
+// 显示添加技能对话框
+function showAddSkillDialog() {
+    const dialog = document.getElementById('add-skill-dialog');
+    const input = document.getElementById('new-skill-name');
+    
+    if (dialog && input) {
+        dialog.style.display = 'flex';
+        input.value = '';
+        input.focus();
+    }
+}
+
+// 隐藏添加技能对话框
+function hideAddSkillDialog() {
+    const dialog = document.getElementById('add-skill-dialog');
+    if (dialog) {
+        dialog.style.display = 'none';
+    }
+}
+
+// 保存新技能名称
+function saveNewSkill() {
+    const input = document.getElementById('new-skill-name');
+    const skill13Btn = document.getElementById('skill13-btn');
+    
+    if (input && input.value.trim() !== '') {
+        skill13Name = input.value.trim();
+        
+        // 更新技能13按钮文本
+        if (skill13Btn) {
+            skill13Btn.textContent = `技能13: ${skill13Name}`;
+        }
+        
+        // 播放添加技能音乐
+        const addSkillMusic = document.getElementById('add-skill-music');
+        if (addSkillMusic) {
+            addSkillMusic.src = 'music/add-skill.MP3'; // 音乐地址暂留空，可以后续添加
+            addSkillMusic.play().catch(e => console.log("添加技能音乐播放失败:", e));
+        }
+        
+        // 显示技能13按钮
+        skill13Active = true;
+        if (skill13Btn) {
+            skill13Btn.style.display = 'block';
+        }
+        
+        addActionLog(`添加新技能: ${skill13Name}`);
+        
+        hideAddSkillDialog();
+    }
+}
+
+// 技能13: 鹰之一手
+function useSkill13() {
+    if (!skill13Active || skill13Used[currentPlayer - 1]) return;
+    
+    // 播放技能13音乐
+    const skill13Music = document.getElementById('skill13-music');
+    if (skill13Music) {
+        skill13Music.src = 'music/skill13.MP3'; // 音乐地址暂留空，可以后续添加
+        skill13Music.play().catch(e => console.log("技能13音乐播放失败:", e));
+    }
+    
+    // 获取所有可落子的位置
+    const availablePositions = [];
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === 0 && !isPositionBroken(i, j) && !isPositionBlocked(i, j)) {
+                availablePositions.push({row: i, col: j});
+            }
+        }
+    }
+    
+    if (availablePositions.length > 0) {
+        // 随机选择一个位置
+        const randomIndex = Math.floor(Math.random() * availablePositions.length);
+        const randomPosition = availablePositions[randomIndex];
+        
+        // 放置棋子
+        placePiece(randomPosition.row, randomPosition.col);
+        
+        skill13Used[currentPlayer - 1] = true;
+        globalSkillsUsed[12] = true;
+        
+        addActionLog(`使用${skill13Name}，随机落子`);
+        
+        updateSkillButtons();
+    } else {
+        updateStatusDisplay(`${playerNames[currentPlayer - 1]}回合`, `${skill13Name} - 无可用位置`);
+    }
+}
+
+// 更新图片显示函数
+function updateImageDisplay() {
+    const imageContainer = document.getElementById('image-container');
+    const dynamicImage = document.getElementById('dynamic-image');
+    const imagePlaceholder = document.getElementById('image-placeholder');
+    
+    if (!imageContainer || !dynamicImage || !imagePlaceholder) return;
+    
+    // 根据游戏状态显示不同的图片
+    let imageUrl = 'img/1.gif';
+    
+    if (gameState === 'initial') {
+        imageUrl = 'img/1.gif'; // 初始状态图片
+    } else if (gameState === 'playing') {
+        if (currentPlayer === 1) {
+            imageUrl = 'img/2.gif'; // 黑方回合图片
+        } else {
+            imageUrl = 'img/3.gif'; // 白方回合图片
+        }
+    } else if (gameState === 'gameOver') {
+        imageUrl = 'img/5.gif'; // 游戏结束图片
+    }
+    
+    // 如果有图片URL，显示图片；否则显示占位符
+    if (imageUrl) {
+        dynamicImage.src = imageUrl;
+        dynamicImage.style.display = 'block';
+        imagePlaceholder.style.display = 'none';
+    } else {
+        dynamicImage.style.display = 'none';
+        imagePlaceholder.style.display = 'block';
+    }
+}
+
+
+// 更新玩家类型
+function updatePlayerType(playerIndex, type) {
+    // 检查是否是AI类型
+    if (type.includes('zhangcheng') || type.includes('skill5') || 
+        type.includes('ziqi') || type.includes('wangjinbao')) {
+        playerTypes[playerIndex] = type; // 存储完整的AI类型
+        
+        // 更新AI名称显示
+        const nameInput = playerIndex === 0 ? blackPlayerNameInput : whitePlayerNameInput;
+        const aiName = getAIName(type);
+        nameInput.value = aiName;
+        nameInput.readOnly = true;
+        
+        console.log(`玩家 ${playerIndex + 1} 设置为AI: ${type}, 显示名称: ${aiName}`);
+        
+    } else {
+        playerTypes[playerIndex] = 'human';
+        
+        const nameInput = playerIndex === 0 ? blackPlayerNameInput : whitePlayerNameInput;
+        nameInput.value = playerIndex === 0 ? '子棋' : '张呈';
+        nameInput.readOnly = false;
+    }
+    
+    updatePlayerNames();
+    updateAIThinkingDisplay();
+    
+    // 如果当前玩家是AI且游戏未结束，触发AI移动
+    if (gameState === 'playing' && !gameOver && currentPlayer === playerIndex + 1 && isAI(playerTypes[currentPlayer - 1])) {
+        console.log(`检测到AI回合，触发AI移动: ${playerTypes[currentPlayer - 1]}`);
+        setTimeout(() => {
+            if (typeof aiMakeMove === 'function') {
+                aiMakeMove();
+            }
+        }, 500);
+    }
+}
+
+function isAI(playerType) {
+    return playerType && (playerType.includes('zhangcheng') || 
+                         playerType.includes('skill5') || 
+                         playerType.includes('ziqi') || 
+                         playerType.includes('wangjinbao'));
+}
+
+// 页面加载完成后初始化游戏
+window.addEventListener('load', function() {
+    console.log('页面已加载，初始化游戏...');
+    if (typeof initGame === 'function') {
+        initGame();
+    } else {
+        console.error('initGame 函数未找到');
+    }
+});

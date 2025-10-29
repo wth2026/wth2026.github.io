@@ -1,0 +1,1261 @@
+
+// AI状态分别存储
+let aiThinking = {
+    'black-zhangcheng': false,
+    'black-skill5': false,
+    'black-ziqi': false,
+    'black-wangjinbao': false,
+    'white-zhangcheng': false,
+    'white-skill5': false,
+    'white-ziqi': false,
+    'white-wangjinbao': false
+};
+
+let aiDecisionHistory = {
+    'black-zhangcheng': [],
+    'black-skill5': [],
+    'black-ziqi': [],
+    'black-wangjinbao': [],
+    'white-zhangcheng': [],
+    'white-skill5': [],
+    'white-ziqi': [],
+    'white-wangjinbao': []
+};
+
+// 统一的AI配置 - 所有AI使用相同策略
+const UNIFIED_AI_CONFIG = {
+    skillProbability: {
+        skill1: 0.7,
+        skill3: 0.5,
+        skill5: 0.4,
+        skill6: 1,
+        skill7: 0.4,
+        skill9: 0.3,
+        skill11: 0.4,
+        skill12: 0.4
+    },
+    useSkillProbability: 0.6,
+    aggression: 0.6,
+    defense: 0.6,
+    randomness: 0.2
+};
+
+// 8个AI角色使用相同的配置
+const AI_CONFIGS = {
+    'black-zhangcheng': UNIFIED_AI_CONFIG,
+    'black-skill5': UNIFIED_AI_CONFIG,
+    'black-ziqi': UNIFIED_AI_CONFIG,
+    'black-wangjinbao': UNIFIED_AI_CONFIG,
+    'white-zhangcheng': UNIFIED_AI_CONFIG,
+    'white-skill5': UNIFIED_AI_CONFIG,
+    'white-ziqi': UNIFIED_AI_CONFIG,
+    'white-wangjinbao': UNIFIED_AI_CONFIG
+};
+
+// 8个AI角色的独立语料库
+const AI_DIALOGUES = {
+    'black-zhangcheng': [
+        "哪有什刹海呀，没有什刹海！",
+        "太耍赖了！",
+        "狗屁不         通！！",
+        "你管这个叫下五子棋？！",
+        "别弄，我这是新裤子！",
+        "五子棋的真谛就不在你们手上！",
+        "你梦到哪句说哪句啊？",
+        "来呀，我必须要当全国第一，就算用你们的方式，我也能赢！",
+        "你们不过是打着五子棋的名号招摇撞骗罢了，你们根本就不配下五子棋！"
+    ],
+    'black-skill5': [
+        "你这个畜生！",
+        "外练筋骨皮，内练五子棋！",
+        "外练筋骨皮，练的是手刀！",
+        "内练五子棋，练的是抽象！",
+        "如果你下棋是为了赢的话，那你和那些下棋的有什么区别！",
+        "打的为师屁滚尿流",
+        "孩子，你现在明白五子棋的真谛了吗？",
+        "你骂老人",
+        "你不要瞪子琪！"
+    ],
+    'black-ziqi': [
+        "你就是个下棋的，那你就是个下棋的！",
+        "居然创造新词，这可是最终的奥义~~~",
+        "既然这样别怪我不客气啦~~~",
+        "想挑战我师父，先从我的尸体上跨过去！",
+        "我要为老师报仇！"
+    ],
+    'black-wangjinbao': [
+        "我坐高铁来的！",
+        "你太过分了，把我徒弟当臭狗一样玩耍。",
+        "他是狗吗他是？！",
+        "你多久没有在下五子棋的时候，又唱又跳了？"
+    ],
+    'white-zhangcheng': [
+        "哪有什刹海呀，没有什刹海！",
+        "太耍赖了！",
+        "狗屁不         通！！",
+        "你管这个叫下五子棋？！",
+        "别弄，我这是新裤子！",
+        "五子棋的真谛就不在你们手上！",
+        "你梦到哪句说哪句啊？",
+        "来呀，我必须要当全国第一，就算用你们的方式，我也能赢！",
+        "你们不过是打着五子棋的名号招摇撞骗罢了，你们根本就不配下五子棋！"
+    ],
+    'white-skill5': [
+        "你这个畜生！",
+        "外练筋骨皮，内练五子棋！",
+        "外练筋骨皮，练的是手刀！",
+        "内练五子棋，练的是抽象！",
+        "如果你下棋是为了赢的话，那你和那些下棋的有什么区别！",
+        "打的为师屁滚尿流",
+        "孩子，你现在明白五子棋的真谛了吗？",
+        "你骂老人",
+        "你不要瞪子琪！"
+    ],
+    'white-ziqi': [
+        "你就是个下棋的，那你就是个下棋的！",
+        "居然创造新词，这可是最终的奥义~~~",
+        "想挑战我师父，先从我的尸体上跨过去！",
+        "既然这样别怪我不客气啦~~~",
+        "我要为老师报仇！"
+    ],
+    'white-wangjinbao': [
+        "我坐高铁来的！",
+        "你太过分了，把我徒弟当臭狗一样玩耍。",
+        "他是狗吗他是？！",
+        "你多久没有在下五子棋的时候，又唱又跳了？"
+    ]
+};
+
+// 初始化AI功能
+
+function initAI() {
+    console.log("初始化AI功能");
+    
+    const blackTypeSelect = document.getElementById('black-player-type');
+    const whiteTypeSelect = document.getElementById('white-player-type');
+    
+    if (blackTypeSelect && whiteTypeSelect) {
+        updatePlayerType(0, blackTypeSelect.value);
+        updatePlayerType(1, whiteTypeSelect.value);
+    }
+    
+    console.log("AI初始化完成");
+}
+
+// 更新玩家类型
+function updatePlayerType(playerIndex, type) {
+    playerTypes[playerIndex] = type;
+    
+    const nameInput = playerIndex === 0 ? 
+        document.getElementById('black-player-name') : 
+        document.getElementById('white-player-name');
+    
+    // 控制AI思考模块的显示
+    const aiThinkingContainer = document.getElementById('ai-thinking-container');
+    const hasAI = isAI(playerTypes[0]) || isAI(playerTypes[1]);
+    
+    if (aiThinkingContainer) {
+        aiThinkingContainer.style.display = hasAI ? 'block' : 'none';
+    }
+    
+    if (isAI(type)) {
+        const aiName = getAIName(type);
+        nameInput.value = aiName;
+        nameInput.readOnly = true;
+    } else {
+        nameInput.readOnly = false;
+        nameInput.value = playerIndex === 0 ? '子棋' : '张呈';
+    }
+    
+    if (typeof updatePlayerNames === 'function') {
+        updatePlayerNames();
+    }
+    
+    // 如果游戏已经开始且当前玩家是AI，触发AI移动
+    if (gameStarted && !gameOver && currentPlayer === playerIndex + 1 && isAI(playerTypes[currentPlayer - 1])) {
+        setTimeout(() => {
+            aiMakeMove();
+        }, 300);
+    }
+}
+
+// AI落子逻辑
+function aiMakeMove() {
+    const aiType = playerTypes[currentPlayer - 1];
+    
+    console.log(`AI移动开始: ${aiType}, 当前玩家: ${currentPlayer}`);
+    
+    // 检查是否是有效的AI类型
+    if (!isAI(aiType)) {
+        console.log(`无效的AI类型: ${aiType}, 取消AI移动`);
+        return;
+    }
+    
+    // 检查是否被技能封锁
+    if (skill12TimerActive || skill2TimerActive) {
+        aiThinking[aiType] = false;
+        updateAIThinkingLog("AI回合被技能跳过，无需思考");
+        return;
+    }
+    
+    if (!gameStarted || gameOver || aiThinking[aiType]) return;
+    
+    aiThinking[aiType] = true;
+    const playerName = playerNames[currentPlayer - 1];
+    
+    updateStatusDisplay(`${playerName}回合`, "AI思考中...");
+    
+    // 显示AI思考容器
+    const aiThinkingContainer = document.getElementById('ai-thinking-container');
+    if (aiThinkingContainer) {
+        aiThinkingContainer.style.display = 'block';
+    }
+    
+    // 记录AI思考开始
+    updateAIThinkingLog(`🤖 ${playerName}开始思考...`);
+    
+    // 模拟AI思考时间
+    setTimeout(() => {
+        if (gameOver) {
+            aiThinking[aiType] = false;
+            return;
+        }
+        
+        if (skill12TimerActive || skill2TimerActive) {
+            aiThinking[aiType] = false;
+            updateAIThinkingLog("AI回合被技能跳过，思考中断");
+            return;
+        }
+        
+        try {
+            const decision = aiDecideAction(aiType);
+            let randomDialogue;
+            
+            if (aiDecisionHistory[aiType]) {
+                aiDecisionHistory[aiType].push({
+                    turn: moveCount[0] + moveCount[1],
+                    decision: decision
+                });
+            }
+
+            const dialogues = AI_DIALOGUES[aiType];
+            if (dialogues && dialogues.length > 0) {
+                randomDialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
+            } else {
+                randomDialogue = '不想说话';
+            }
+
+            if (decision && decision.type === 'move') {
+                const position = `${String.fromCharCode(65 + decision.col)}${decision.row + 1}`;
+                const content = randomDialogue+'\n'+`${playerName}决定落子于 ${position} 理由: ${decision.reason || '最佳落子位置'}`;
+                updateAIThinkingLog(content);
+                
+                setTimeout(() => {
+                    if (gameStarted && !gameOver && typeof placePiece === 'function') {
+                        placePiece(decision.row, decision.col);
+                    }
+                    aiThinking[aiType] = false;
+                }, 300);
+                
+            } else if (decision && decision.type === 'skill') {
+                const skillNames = {
+                    1: '飞沙走石', 3: '力拔山西', 5: '张兴朝', 
+                    7: '保洁上门', 9: '两极反转', 11: '擒擒拿拿',
+                    12: 'See You Again'
+                };
+                const skillName = skillNames[decision.skill] || `技能${decision.skill}`;
+                addActionLog(`使用${skillName}`, true);
+                const content = randomDialogue+'\n'+`${playerName}决定使用技能 ${skillName}\n理由: ${decision.reason || '战术需要'}`;
+                updateAIThinkingLog(content);
+                
+                setTimeout(() => {
+                    if (gameStarted && !gameOver) {
+                        useAISkill(decision.skill, aiType);
+                    }
+                    aiThinking[aiType] = false;
+                }, 300);
+            } else {
+                aiThinking[aiType] = false;
+            }
+
+        } catch (error) {
+            console.error('AI决策过程中出错:', error);
+            aiThinking[aiType] = false;
+        }
+    }, 300);
+}
+
+// AI决策：决定是落子还是使用技能
+function aiDecideAction(aiType) {
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    const useSkillProbability = config.useSkillProbability || 0.6;
+    
+    // 获取可用技能
+    const availableSkills = getAvailableSkills(aiType).filter(skill => [1,2,3,4,5,6,7,8,9,10,11,12].includes(skill));
+    
+    // 检查是否有可用的技能
+    if (availableSkills.length > 0 && Math.random() < useSkillProbability) {
+        const selectedSkill = selectAISkill(availableSkills, aiType);
+        if (selectedSkill) {
+            return { 
+                type: 'skill', 
+                skill: selectedSkill.skill,
+                reason: selectedSkill.reason
+            };
+        }
+    }
+    
+    // 否则落子
+    const move = getBestMove(aiType);
+    return { 
+        type: 'move', 
+        row: move.row, 
+        col: move.col,
+        reason: move.reason || '最佳落子位置'
+    };
+}
+
+// 更新AI思考日志
+function updateAIThinkingLog(content) {
+    const aiThinkingLog = document.getElementById('ai-thinking-log');
+    if (aiThinkingLog) {
+        aiThinkingLog.textContent = content;
+    }
+}
+
+// 获取AI可用的技能
+function getAvailableSkills(aiType) {
+    const availableSkills = [];
+    const aiIndex = currentPlayer - 1;
+    
+    if (typeof skill1Active === 'undefined' || typeof skill1Used === 'undefined') return availableSkills;
+    
+    // 技能1: 飞沙走石
+    if (skill1Active[aiIndex] && !skill1Used[aiIndex] && (!skill11Blocked || !skill11Blocked[aiIndex])) {
+        availableSkills.push(1);
+    }
+    
+    // 技能3: 力拔山西
+    if (skill3Used && !skill3Used[aiIndex]) {
+        availableSkills.push(3);
+    }
+    
+    // 技能5: 张兴朝
+    if (skill5Used && !skill5Used[aiIndex]) {
+        availableSkills.push(5);
+    }
+    
+    // 技能7: 保洁上门
+    if (skill7Active && skill7Active[aiIndex] && !skill7Used[aiIndex]) {
+        availableSkills.push(7);
+    }
+    
+    // 技能9: 两极反转
+    if (skill9Used && !skill9Used[aiIndex]) {
+        availableSkills.push(9);
+    }
+    
+    // 技能11: 擒擒拿拿
+    if (skill11Active && skill11Active[aiIndex] && !skill11Used[aiIndex]) {
+        availableSkills.push(11);
+    }
+    
+    // 技能12: See You Again
+    if (skill12Active && skill12Active[aiIndex] && !skill12Used[aiIndex]) {
+        availableSkills.push(12);
+    }
+    
+    return availableSkills;
+}
+
+// AI选择技能
+function selectAISkill(availableSkills, aiType) {
+    const skillValues = [];
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    
+    for (const skill of availableSkills) {
+        let evaluation = { value: 0, reason: '' };
+        
+        switch (skill) {
+            case 1: evaluation = evaluateSkill1(aiType); break;
+            case 3: evaluation = evaluateSkill3(aiType); break;
+            case 5: evaluation = evaluateSkill5(aiType); break;
+            case 7: evaluation = evaluateSkill7(aiType); break;
+            case 9: evaluation = evaluateSkill9(aiType); break;
+            case 11: evaluation = evaluateSkill11(aiType); break;
+            case 12: evaluation = evaluateSkill12(aiType); break;
+        }
+        
+        const baseProbability = (config.skillProbability && config.skillProbability[`skill${skill}`]) || 0.2;
+        evaluation.value *= baseProbability;
+        
+        const randomness = config.randomness || 0.2;
+        evaluation.value *= (1 + Math.random() * randomness);
+        
+        skillValues.push({ 
+            skill, 
+            value: evaluation.value,
+            reason: evaluation.reason
+        });
+    }
+    
+    // 按价值排序，选择价值最高的技能
+    skillValues.sort((a, b) => b.value - a.value);
+    
+    if (skillValues.length > 0 && skillValues[0].value > 0.1) {
+        return {
+            skill: skillValues[0].skill,
+            reason: skillValues[0].reason
+        };
+    }
+    
+    return null;
+}
+
+// 评估技能1: 飞沙走石
+function evaluateSkill1(aiType) {
+    let maxValue = 0;
+    let enemyCount = 0;
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    const aggression = config.aggression || 0.6;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === currentPlayer) {
+                const count = countEnemyPiecesInRange(i, j, SKILL_RANGE);
+                const value = count * 0.3 * aggression;
+                
+                if (value > maxValue) {
+                    maxValue = value;
+                    enemyCount = count;
+                }
+            }
+        }
+    }
+    
+    return {
+        value: maxValue,
+        reason: enemyCount > 0 ? `可清除${enemyCount}个敌方棋子` : '无合适目标'
+    };
+}
+
+// 评估技能3: 力拔山西
+function evaluateSkill3(aiType) {
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    let maxValue = 0;
+    let reason = '无重要位置可破坏';
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    const defense = config.defense || 0.6;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === 0 && !isPositionBroken(i, j) && !isPositionBlocked(i, j)) {
+                let value = 0;
+                let posReason = '';
+                
+                if (isImportantPosition(i, j, enemyPlayer)) {
+                    value += 0.7 * defense;
+                    posReason = '敌方关键位置';
+                }
+                
+                for (const [starRow, starCol] of STAR_POSITIONS) {
+                    if (i === starRow && j === starCol) {
+                        value += 0.3;
+                        posReason += posReason ? ', 星位' : '星位';
+                    }
+                }
+                
+                if (value > maxValue) {
+                    maxValue = value;
+                    reason = posReason || '一般位置';
+                }
+            }
+        }
+    }
+    
+    return {
+        value: maxValue,
+        reason: reason
+    };
+}
+
+// 评估技能5: 张兴朝
+function evaluateSkill5(aiType) {
+    const totalMoves = moveCount[0] + moveCount[1];
+    const earlyGameBonus = Math.max(0, 1 - totalMoves / 30);
+    const skill7Bonus = skill7Active && skill7Active[currentPlayer - 1] ? 0 : 0.5;
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    const skill5Prob = (config.skillProbability && config.skillProbability.skill5) || 0.4;
+    
+    const value = (0.4 + earlyGameBonus * 0.3 + skill7Bonus) * skill5Prob;
+    
+    return {
+        value: value,
+        reason: `游戏早期价值高，可激活保洁上门技能`
+    };
+}
+
+// 评估技能7: 保洁上门
+function evaluateSkill7(aiType) {
+    let maxValue = 0;
+    let bestColumn = 0;
+    let reason = '无合适列可清除';
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    const aggression = config.aggression || 0.6;
+    
+    for (let col = 0; col < BOARD_SIZE; col++) {
+        let value = 0;
+        let enemyPieces = 0;
+        let ownPieces = 0;
+        
+        for (let row = 0; row < BOARD_SIZE; row++) {
+            if (board[row][col] !== 0) {
+                if (board[row][col] === currentPlayer) {
+                    ownPieces++;
+                } else {
+                    enemyPieces++;
+                }
+            }
+        }
+        
+        value = (enemyPieces * 0.4 - ownPieces * 0.2) * aggression;
+        
+        if (value > maxValue) {
+            maxValue = value;
+            bestColumn = col;
+            reason = `清除 ${String.fromCharCode(65 + col)} 列，敌方${enemyPieces}子，己方${ownPieces}子`;
+        }
+    }
+    
+    return {
+        value: maxValue,
+        reason: reason
+    };
+}
+
+// 评估技能9: 两极反转
+function evaluateSkill9(aiType) {
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    let enemyPiecesCount = 0;
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    const skill9Prob = (config.skillProbability && config.skillProbability.skill9) || 0.3;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === enemyPlayer) {
+                enemyPiecesCount++;
+            }
+        }
+    }
+    
+    const value = (enemyPiecesCount > 0 ? 0.5 : 0) * skill9Prob;
+    
+    return {
+        value: value,
+        reason: enemyPiecesCount > 0 ? `有${enemyPiecesCount}个敌方棋子可转换` : '无敌方棋子可转换'
+    };
+}
+
+// 评估技能11: 擒擒拿拿
+function evaluateSkill11(aiType) {
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    const defense = config.defense || 0.6;
+    
+    if (skill1Active[enemyPlayer - 1] && !skill1Used[enemyPlayer - 1]) {
+        return {
+            value: 0.8 * defense,
+            reason: '敌方飞沙走石已激活，可封锁'
+        };
+    }
+    
+    return {
+        value: 0,
+        reason: '敌方飞沙走石未激活'
+    };
+}
+
+// 评估技能12: See You Again
+function evaluateSkill12(aiType) {
+    const ownRemovedPieces = removedPieces.filter(piece => piece.player === currentPlayer);
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    const skill12Prob = (config.skillProbability && config.skillProbability.skill12) || 0.5;
+    
+    if (ownRemovedPieces.length === 0) {
+        return {
+            value: 0,
+            reason: '什刹海中没有我方棋子'
+        };
+    }
+    
+    const value = (0.6 + ownRemovedPieces.length * 0.1) * skill12Prob;
+    
+    return {
+        value: value,
+        reason: `什刹海中有${ownRemovedPieces.length}个我方棋子，可放回并跳过敌方回合`
+    };
+}
+
+// AI使用技能
+function useAISkill(skillNumber, aiType) {
+    console.log(`AI使用技能 ${skillNumber}`);
+    
+    switch (skillNumber) {
+        case 1: useAISkill1(aiType); break;
+        case 3: useAISkill3(aiType); break;
+        case 5: 
+            if (typeof useSkill5 === 'function') useSkill5();
+            break;
+        case 7: useAISkill7(aiType); break;
+        case 9: 
+            if (typeof useSkill9 === 'function') useSkill9();
+            break;
+        case 11: 
+            if (typeof useSkill11 === 'function') useSkill11();
+            break;
+        case 12: 
+            if (typeof useSkill12 === 'function') useSkill12();
+            break;
+    }
+}
+
+// AI使用技能1: 飞沙走石
+function useAISkill1(aiType) {
+    console.log("AI使用技能1: 飞沙走石");
+    
+    let bestPiece = null;
+    let maxEnemyCount = 0;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === currentPlayer) {
+                const count = countEnemyPiecesInRange(i, j, SKILL_RANGE);
+                if (count > maxEnemyCount) {
+                    maxEnemyCount = count;
+                    bestPiece = { row: i, col: j };
+                }
+            }
+        }
+    }
+    
+    if (bestPiece && maxEnemyCount > 0) {
+        const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+        let removedCount = 0;
+        
+        for (let i = 0; i < BOARD_SIZE; i++) {
+            for (let j = 0; j < BOARD_SIZE; j++) {
+                if (board[i][j] === enemyPlayer) {
+                    const distance = Math.abs(i - bestPiece.row) + Math.abs(j - bestPiece.col);
+                    if (distance <= SKILL_RANGE) {
+                        removedPieces.push({
+                            player: enemyPlayer,
+                            row: i,
+                            col: j,
+                            moveNumber: moveNumbers[i][j]
+                        });
+                        
+                        board[i][j] = 0;
+                        moveNumbers[i][j] = 0;
+                        removedCount++;
+                    }
+                }
+            }
+        }
+        
+        if (removedCount > 0 && skill1RemoveSound) {
+            skill1RemoveSound.currentTime = 0;
+            skill1RemoveSound.play().catch(e => console.log("技能1音效播放失败:", e));
+        }
+        
+        addActionLog(`使用飞沙走石，清除${removedCount}个敌方棋子`, true);
+        
+        updateBackgroundMusicVolume();
+        drawBoard();
+        updateRemovedPiecesDisplay();
+        
+        skill1Used[currentPlayer - 1] = true;
+        globalSkillsUsed[0] = true;
+        
+        finishSkill();
+        switchPlayer();
+    } else {
+        const move = getBestMove(aiType);
+        if (typeof placePiece === 'function') {
+            placePiece(move.row, move.col);
+        }
+    }
+}
+
+// AI使用技能3: 力拔山西
+function useAISkill3(aiType) {
+    console.log("AI使用技能3: 力拔山西");
+    
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    let bestPosition = null;
+    let maxValue = 0;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === 0 && !isPositionBroken(i, j) && !isPositionBlocked(i, j)) {
+                let value = 0;
+                
+                if (isImportantPosition(i, j, enemyPlayer)) {
+                    value += 0.7;
+                }
+                
+                for (const [starRow, starCol] of STAR_POSITIONS) {
+                    if (i === starRow && j === starCol) {
+                        value += 0.3;
+                    }
+                }
+                
+                if (value > maxValue) {
+                    maxValue = value;
+                    bestPosition = { row: i, col: j };
+                }
+            }
+        }
+    }
+    
+    if (bestPosition) {
+        if (board[bestPosition.row][bestPosition.col] !== 0) {
+            removedPieces.push({
+                player: board[bestPosition.row][bestPosition.col],
+                row: bestPosition.row,
+                col: bestPosition.col,
+                moveNumber: moveNumbers[bestPosition.row][bestPosition.col]
+            });
+            
+            board[bestPosition.row][bestPosition.col] = 0;
+            moveNumbers[bestPosition.row][bestPosition.col] = 0;
+        }
+        
+        brokenPositions.push({row: bestPosition.row, col: bestPosition.col});
+        
+        if (brokenSound) {
+            brokenSound.currentTime = 0;
+            brokenSound.play().catch(e => console.log("摔坏音效播放失败:", e));
+        }
+        
+        addActionLog(`使用力拔山西，摔坏位置 ${String.fromCharCode(65 + bestPosition.col)}${bestPosition.row + 1}`, true);
+        
+        updateBackgroundMusicVolume();
+        drawBoard();
+        updateRemovedPiecesDisplay();
+        
+        skill3Used[currentPlayer - 1] = true;
+        globalSkillsUsed[2] = true;
+        
+        finishSkill();
+        switchPlayer();
+    } else {
+        const move = getBestMove(aiType);
+        if (typeof placePiece === 'function') {
+            placePiece(move.row, move.col);
+        }
+    }
+}
+
+// AI使用技能7: 保洁上门
+function useAISkill7(aiType) {
+    console.log("AI使用技能7: 保洁上门");
+    
+    let bestColumn = 0;
+    let maxValue = 0;
+    
+    for (let col = 0; col < BOARD_SIZE; col++) {
+        let value = 0;
+        let enemyPieces = 0;
+        let ownPieces = 0;
+        
+        for (let row = 0; row < BOARD_SIZE; row++) {
+            if (board[row][col] !== 0) {
+                if (board[row][col] === currentPlayer) {
+                    ownPieces++;
+                } else {
+                    enemyPieces++;
+                }
+            }
+        }
+        
+        value = enemyPieces * 0.4 - ownPieces * 0.2;
+        
+        if (value > maxValue) {
+            maxValue = value;
+            bestColumn = col;
+        }
+    }
+    
+    if (maxValue > 0) {
+        let removedCount = 0;
+        for (let i = 0; i < BOARD_SIZE; i++) {
+            if (board[i][bestColumn] !== 0) {
+                removedPieces.push({
+                    player: board[i][bestColumn],
+                    row: i,
+                    col: bestColumn,
+                    moveNumber: moveNumbers[i][bestColumn]
+                });
+                
+                board[i][bestColumn] = 0;
+                moveNumbers[i][bestColumn] = 0;
+                removedCount++;
+            }
+        }
+        
+        if (removedCount > 0 && skill7RemoveSound) {
+            skill7RemoveSound.currentTime = 0;
+            skill7RemoveSound.play().catch(e => console.log("技能7音效播放失败:", e));
+        }
+        
+        addActionLog(`使用保洁上门，清除 ${String.fromCharCode(65 + bestColumn)} 列所有棋子`, true);
+        
+        updateBackgroundMusicVolume();
+        drawBoard();
+        updateRemovedPiecesDisplay();
+        
+        skill7Used[currentPlayer - 1] = true;
+        globalSkillsUsed[6] = true;
+        
+        finishSkill();
+        switchPlayer();
+    } else {
+        const move = getBestMove(aiType);
+        if (typeof placePiece === 'function') {
+            placePiece(move.row, move.col);
+        }
+    }
+}
+
+// 辅助函数：计算范围内敌方棋子数量
+function countEnemyPiecesInRange(row, col, range) {
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    let count = 0;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === enemyPlayer) {
+                const distance = Math.abs(i - row) + Math.abs(j - col);
+                if (distance <= range) {
+                    count++;
+                }
+            }
+        }
+    }
+    
+    return count;
+}
+
+// 辅助函数：判断位置是否重要（能形成连线）
+function isImportantPosition(row, col, player) {
+    board[row][col] = player;
+    
+    let isImportant = false;
+    
+    const directions = [
+        [0, 1],  // 横
+        [1, 0],  // 竖
+        [1, 1],  // 左上到右下
+        [1, -1]  // 右上到左下
+    ];
+    
+    for (const [dx, dy] of directions) {
+        let count = 1;
+        
+        for (let i = 1; i < 5; i++) {
+            const newRow = row + dx * i;
+            const newCol = col + dy * i;
+            
+            if (newRow >= 0 && newRow < BOARD_SIZE && 
+                newCol >= 0 && newCol < BOARD_SIZE && 
+                board[newRow][newCol] === player) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        
+        for (let i = 1; i < 5; i++) {
+            const newRow = row - dx * i;
+            const newCol = col - dy * i;
+            
+            if (newRow >= 0 && newRow < BOARD_SIZE && 
+                newCol >= 0 && newCol < BOARD_SIZE && 
+                board[newRow][newCol] === player) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        
+        if (count >= 3) {
+            isImportant = true;
+            break;
+        }
+    }
+    
+    board[row][col] = 0;
+    
+    return isImportant;
+}
+
+// 获取最佳落子位置
+function getBestMove(aiType) {
+    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+    
+    // 检查是否有立即获胜的机会
+    let winningMove = findWinningMove(currentPlayer);
+    if (winningMove) {
+        winningMove.reason = '立即获胜机会';
+        return winningMove;
+    }
+    
+    // 检查是否需要阻止对手获胜
+    let blockingMove = findWinningMove(enemyPlayer);
+    if (blockingMove) {
+        blockingMove.reason = '阻止对手获胜';
+        return blockingMove;
+    }
+    
+    return getHardMove(aiType);
+}
+
+// 寻找获胜位置
+function findWinningMove(player) {
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === 0 && !isPositionBroken(i, j) && !isPositionBlocked(i, j)) {
+                board[i][j] = player;
+                if (checkWin(i, j, player)) {
+                    board[i][j] = 0;
+                    return { 
+                        row: i, 
+                        col: j,
+                        reason: '获胜位置'
+                    };
+                }
+                board[i][j] = 0;
+            }
+        }
+    }
+    return null;
+}
+
+// 简单AI：随机落子
+function getEasyMove(aiType) {
+    const emptyPositions = [];
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === 0 && !isPositionBroken(i, j) && !isPositionBlocked(i, j)) {
+                emptyPositions.push({ row: i, col: j });
+            }
+        }
+    }
+    
+    if (emptyPositions.length > 0) {
+        const randomIndex = Math.floor(Math.random() * emptyPositions.length);
+        const move = emptyPositions[randomIndex];
+        move.reason = '随机选择位置';
+        return move;
+    }
+    
+    return null;
+}
+
+// 困难AI：评估函数
+function getHardMove(aiType) {
+    const scoredPositions = [];
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === 0 && !isPositionBroken(i, j) && !isPositionBlocked(i, j)) {
+                let score = calculatePositionScore(i, j, aiType);
+                score += evaluateFuturePotential(i, j, currentPlayer, 2, aiType);
+                scoredPositions.push({ row: i, col: j, score: score });
+            }
+        }
+    }
+    
+    if (scoredPositions.length > 0) {
+        scoredPositions.sort((a, b) => b.score - a.score);
+        const bestMove = scoredPositions[0];
+        bestMove.reason = `最高分位置`;
+        return bestMove;
+    }
+    
+    return getEasyMove(aiType);
+}
+
+// 评估未来潜力
+function evaluateFuturePotential(row, col, player, depth, aiType) {
+    if (depth <= 0) return 0;
+    
+    let potentialScore = 0;
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    const aggression = config.aggression || 0.6;
+    const defense = config.defense || 0.6;
+    
+    board[row][col] = player;
+    
+    const enemyPlayer = player === 1 ? 2 : 1;
+    
+    if (hasLiveThree(player)) {
+        potentialScore += 50 * depth * aggression;
+    }
+    
+    if (hasFourInRow(player)) {
+        potentialScore += 100 * depth * aggression;
+    }
+    
+    if (depth > 1) {
+        let bestEnemyResponse = 0;
+        
+        for (let i = 0; i < BOARD_SIZE; i++) {
+            for (let j = 0; j < BOARD_SIZE; j++) {
+                if (board[i][j] === 0 && !isPositionBroken(i, j) && !isPositionBlocked(i, j)) {
+                    const enemyScore = evaluateFuturePotential(i, j, enemyPlayer, depth - 1, aiType);
+                    if (enemyScore > bestEnemyResponse) {
+                        bestEnemyResponse = enemyScore;
+                    }
+                }
+            }
+        }
+        
+        potentialScore -= bestEnemyResponse * 0.5 * defense;
+    }
+    
+    board[row][col] = 0;
+    
+    return potentialScore;
+}
+
+// 计算位置分数
+function calculatePositionScore(row, col, aiType) {
+    let score = 0;
+    const config = AI_CONFIGS[aiType] || UNIFIED_AI_CONFIG;
+    const aggression = config.aggression || 0.6;
+    const defense = config.defense || 0.6;
+    const randomness = config.randomness || 0.2;
+    
+    const center = BOARD_SIZE / 2;
+    const distanceFromCenter = Math.sqrt(Math.pow(row - center, 2) + Math.pow(col - center, 2));
+    score += (BOARD_SIZE - distanceFromCenter) * 2;
+    
+    for (let i = Math.max(0, row - 2); i <= Math.min(BOARD_SIZE - 1, row + 2); i++) {
+        for (let j = Math.max(0, col - 2); j <= Math.min(BOARD_SIZE - 1, col + 2); j++) {
+            if (board[i][j] === currentPlayer) {
+                score += 10 * aggression;
+            } else if (board[i][j] !== 0) {
+                score += 5 * defense;
+            }
+        }
+    }
+    
+    for (const [starRow, starCol] of STAR_POSITIONS) {
+        if (row === starRow && col === starCol) {
+            score += 15;
+        }
+    }
+    
+    score += Math.random() * 5 * randomness;
+    
+    return score;
+}
+
+// 检查是否有活三
+function hasLiveThree(player) {
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === player) {
+                const directions = [[0,1], [1,0], [1,1], [1,-1]];
+                
+                for (const [dx, dy] of directions) {
+                    let count = 1;
+                    let emptyEnds = 0;
+                    
+                    for (let k = 1; k < 4; k++) {
+                        const newRow = i + dx * k;
+                        const newCol = j + dy * k;
+                        
+                        if (newRow >= 0 && newRow < BOARD_SIZE && newCol >= 0 && newCol < BOARD_SIZE) {
+                            if (board[newRow][newCol] === player) {
+                                count++;
+                            } else if (board[newRow][newCol] === 0) {
+                                emptyEnds++;
+                                break;
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    for (let k = 1; k < 4; k++) {
+                        const newRow = i - dx * k;
+                        const newCol = j - dy * k;
+                        
+                        if (newRow >= 0 && newRow < BOARD_SIZE && newCol >= 0 && newCol < BOARD_SIZE) {
+                            if (board[newRow][newCol] === player) {
+                                count++;
+                            } else if (board[newRow][newCol] === 0) {
+                                emptyEnds++;
+                                break;
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    if (count === 3 && emptyEnds >= 2) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+// 检查是否有四连
+function hasFourInRow(player) {
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === player) {
+                const directions = [[0,1], [1,0], [1,1], [1,-1]];
+                
+                for (const [dx, dy] of directions) {
+                    let count = 1;
+                    
+                    for (let k = 1; k < 5; k++) {
+                        const newRow = i + dx * k;
+                        const newCol = j + dy * k;
+                        
+                        if (newRow >= 0 && newRow < BOARD_SIZE && newCol >= 0 && newCol < BOARD_SIZE) {
+                            if (board[newRow][newCol] === player) {
+                                count++;
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    for (let k = 1; k < 5; k++) {
+                        const newRow = i - dx * k;
+                        const newCol = j - dy * k;
+                        
+                        if (newRow >= 0 && newRow < BOARD_SIZE && newCol >= 0 && newCol < BOARD_SIZE) {
+                            if (board[newRow][newCol] === player) {
+                                count++;
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    if (count >= 4) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+// 获取AI名称
+function getAIName(aiType) {
+    const aiNames = {
+        'black-zhangcheng': '黑张呈',
+        'black-skill5': '黑技能五',
+        'black-ziqi': '黑子棋',
+        'black-wangjinbao': '黑王金宝',
+        'white-zhangcheng': '白张呈',
+        'white-skill5': '白技能五',
+        'white-ziqi': '白子棋',
+        'white-wangjinbao': '白王金宝'
+    };
+    
+    return aiNames[aiType] || 'AI';
+}
+
+// 检查是否是AI
+function isAI(playerType) {
+    return playerType && (playerType.includes('zhangcheng') || 
+                         playerType.includes('skill5') || 
+                         playerType.includes('ziqi') || 
+                         playerType.includes('wangjinbao'));
+}
+
+// 在切换玩家时检查是否需要AI移动
+function checkForAIMove() {
+    const aiType = playerTypes[currentPlayer - 1];
+    
+    if ((skill12TimerActive || skill2TimerActive) && isAI(aiType)) {
+        aiThinking[aiType] = false;
+        updateAIThinkingLog("AI回合被技能跳过，无需思考");
+        return;
+    }
+    
+    if (gameStarted && !gameOver && isAI(aiType)) {
+        setTimeout(() => {
+            aiMakeMove();
+        }, 300);
+    }
+}
+
+// 修改现有的switchPlayer函数，添加AI检查
+if (typeof switchPlayer === 'function') {
+    const originalSwitchPlayer = switchPlayer;
+    switchPlayer = function() {
+        originalSwitchPlayer.apply(this, arguments);
+        checkForAIMove();
+    };
+}
+
+// 修改现有的initGame函数，添加AI初始化
+if (typeof initGame === 'function') {
+    const originalInitGame = initGame;
+    initGame = function() {
+        originalInitGame.apply(this, arguments);
+        initAI();
+    };
+}
+
+// 修改现有的handleRestartRequest函数，重置AI状态
+if (typeof handleRestartRequest === 'function') {
+    const originalHandleRestartRequest = handleRestartRequest;
+    handleRestartRequest = function() {
+        originalHandleRestartRequest.apply(this, arguments);
+        
+        for (const aiType in aiThinking) {
+            aiThinking[aiType] = false;
+        }
+        for (const aiType in aiDecisionHistory) {
+            aiDecisionHistory[aiType] = [];
+        }
+        
+        const aiThinkingContainer = document.getElementById('ai-thinking-container');
+        if (aiThinkingContainer) {
+            aiThinkingContainer.style.display = 'none';
+        }
+    };
+}
+
+// 页面加载完成后初始化AI
+window.addEventListener('load', function() {
+    console.log('页面已加载，初始化AI...');
+    setTimeout(() => {
+        initAI();
+    }, 100);
+});
