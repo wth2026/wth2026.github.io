@@ -69,6 +69,7 @@
             object-fit: contain;
         }
         
+        /* 初始隐藏控制元素 */
         .hide-controls::-webkit-media-controls {
             display: none !important;
         }
@@ -179,13 +180,14 @@
         }
         
         .cache-status {
-            display: none;
+            display: none; /* 隐藏缓存状态显示 */
         }
         
+        /* 小屏幕笔记本电脑样式 (6:19比例) */
         @media (min-width: 451px) and (max-width: 1024px) {
             .video-container {
-                width: 60vh;
-                height: 95vh;
+                width: 60vh; /* 使用视口高度作为基准 */
+                height: 95vh; /* 6:19比例调整 */
                 max-width: 380px;
                 max-height: 600px;
             }
@@ -205,6 +207,7 @@
             }
         }
         
+        /* 移动端样式 */
         @media (max-width: 450px) {
             .player-container {
                 flex-direction: column;
@@ -233,6 +236,7 @@
             }
         }
         
+        /* 小屏幕设备 */
         @media (max-width: 400px) {
             .video-container {
                 width: 376px;
@@ -276,7 +280,9 @@
     </div>
 
     <script>
+        // 使用模块化封装
         document.addEventListener('DOMContentLoaded', () => {
+            // DOM元素缓存
             const elements = {
                 videoPlayer: document.getElementById('videoPlayer'),
                 videoContainer: document.getElementById('videoContainer'),
@@ -290,40 +296,46 @@
                 cacheStatus: document.getElementById('cacheStatus')
             };
 
+            // 配置常量
             const config = {
                 AUTO_PLAY_DEFAULT: false,
-                MUTE_DEFAULT: false,
+                MUTE_DEFAULT: true, // 默认静音，提高自动播放成功率
                 MAX_RETRIES: 5,
                 CACHE_SIZE: 15,
                 CACHE_THRESHOLD: 3,
                 CONTROLS_HIDE_DELAY: 3000,
-                API_URLS: [
-                    'http://api.xingchenfu.xyz/API/hssp.php',
-                    'http://api.xingchenfu.xyz/API/wmsc.php',
-                    'http://api.xingchenfu.xyz/API/tianmei.php',
-                    'http://api.xingchenfu.xyz/API/cdxl.php',
-                    'http://api.xingchenfu.xyz/API/yzxl.php',
-                    'http://api.xingchenfu.xyz/API/rwsp.php',
-                    'http://api.xingchenfu.xyz/API/nvda.php',
-                    'http://api.xingchenfu.xyz/API/bsxl.php',
-                    'http://api.xingchenfu.xyz/API/zzxjj.php',
-                    'http://api.xingchenfu.xyz/API/qttj.php',
-                    'http://api.xingchenfu.xyz/API/xqtj.php',
-                    'http://api.xingchenfu.xyz/API/sktj.php',
-                    'http://api.xingchenfu.xyz/API/cossp.php',
-                    'http://api.xingchenfu.xyz/API/xiaohulu.php',
-                    'http://api.xingchenfu.xyz/API/manhuay.php',
-                    'http://api.xingchenfu.xyz/API/bianzhuang.php',
-                    'http://api.xingchenfu.xyz/API/jk.php',
+                VIDEO_RESET_INTERVAL: 60000,
+                PLAY_RETRY_DELAY: 200, // 播放请求冲突时的重试延迟
+                BASE_API_URLS: [
                     'https://v2.xxapi.cn/api/meinv?return=302',
                     'https://api.jkyai.top/API/jxhssp.php',
                     'https://api.jkyai.top/API/jxbssp.php',
                     'https://api.jkyai.top/API/rmtmsp/api.php',
                     'https://api.jkyai.top/API/qcndxl.php',
-                    'https://www.hhlqilongzhu.cn/api/MP4_xiaojiejie.php'
+                    'https://www.hhlqilongzhu.cn/api/MP4_xiaojiejie.php',
+                    'https://api.yujn.cn/api/zzxjj.php?type=video'
+                ],
+                API_317AK_BASE: 'https://api.317ak.cn/api/',
+                API_317AK_PARAMS: '?ckey=1LJFEBWBK52F50SZK82S',
+                API_317AK_PATHS: [
+                    'sp/jmxl', 'jhsp', 'sp/xtmx', 'sp/gzhy', 'sp/ttbm', 
+                    'sp/xqhh', 'sp/xxmm', 'sp/hljj', 'sp/lbjj', 'sp/xlmn',
+                    'sp/ttmn', 'sp/lbll', 'sp/duilian', 'sp/qmtj', 'sp/didjj',
+                    'sp/lbxg', 'sp/ldxl', 'sp/qfhy', 'sp/zycx', 'sp/hzxl',
+                    'sp/xjxl', 'sp/aqxl', 'sp/blsx', 'sp/yexl', 'sp/dexl',
+                    'sp/kkxl', 'sp/qbhc', 'sp/yjxl', 'sp/slxl', 'sp/ndxl',
+                    'sp/ddsp', 'sp/mncd', 'sp/rwxl', 'sp/smwx', 'sp/ywxl',
+                    'sp/slmm', 'sp/btqb', 'sp/cqng', 'sp/jpyz', 'sp/zyqx',
+                    'sp/yzmt', 'sp/xxxl', 'sp/qcxl', 'sp/myxl', 'sp/mhyx',
+                    'sp/cosxl', 'sp/yzxl', 'sp/qttj', 'sp/llxl', 'sp/gjbz',
+                    'sp/dmbz', 'sp/hcyx', 'sp/dxbz', 'sp/ddxl', 'sp/cblx',
+                    'sp/bybz', 'sp/hssp', 'sp/yjsp', 'sp/amxx', 'sp/wpxl',
+                    'sp/yqkd', 'sp/hbss', 'sp/mxny', 'sp/npxl', 'sp/ycyy',
+                    'sp/sqxl', 'sp/yssp', 'sp/bssp'
                 ]
             };
 
+            // 状态管理
             const state = {
                 autoPlayEnabled: config.AUTO_PLAY_DEFAULT,
                 controlsTimeout: null,
@@ -331,35 +343,153 @@
                 retryAttempts: 0,
                 retryTimer: null,
                 videoCache: [],
-                isCaching: false
+                isCaching: false,
+                videoResetTimer: null,
+                currentVideoUrl: null,
+                current317akIndex: -1,
+                isPlaying: false,
+                playPending: false,
+                playRetryCount: 0, // 播放重试计数器
+                maxPlayRetries: 5 // 最大播放重试次数
             };
 
+            // 工具函数
             const utils = {
+                // 生成带时间戳的URL避免缓存
                 getTimestampUrl(url) {
                     return `${url}?t=${Date.now()}`;
                 },
                 
+                // 防抖函数
                 debounce(func, wait) {
                     let timeout;
                     return function(...args) {
                         clearTimeout(timeout);
                         timeout = setTimeout(() => func.apply(this, args), wait);
                     };
+                },
+                
+                // 安全播放视频的封装函数，增加重试机制
+                safePlay(videoElement) {
+                    // 如果有播放请求正在处理中，增加重试机制
+                    if (state.playPending) {
+                        // 如果还没超过最大重试次数，延迟后重试
+                        if (state.playRetryCount < state.maxPlayRetries) {
+                            state.playRetryCount++;
+                            return new Promise((resolve) => {
+                                setTimeout(() => {
+                                    resolve(this.safePlay(videoElement));
+                                }, config.PLAY_RETRY_DELAY);
+                            });
+                        } else {
+                            // 超过最大重试次数，重置计数器并拒绝
+                            state.playRetryCount = 0;
+                            return Promise.reject(new Error('Play request pending - max retries reached'));
+                        }
+                    }
+                    
+                    state.playPending = true;
+                    state.playRetryCount = 0; // 重置重试计数器
+                    
+                    return new Promise((resolve, reject) => {
+                        // 先检查是否已暂停
+                        if (!videoElement.paused) {
+                            state.playPending = false;
+                            return resolve();
+                        }
+                        
+                        // 尝试播放
+                        const playPromise = videoElement.play();
+                        
+                        if (playPromise !== undefined) {
+                            playPromise
+                                .then(() => {
+                                    state.isPlaying = true;
+                                    state.playPending = false;
+                                    resolve();
+                                })
+                                .catch(error => {
+                                    // 处理播放错误
+                                    console.error('播放失败:', error);
+                                    state.playPending = false;
+                                    
+                                    // 针对不同错误类型的处理
+                                    if (error.name === 'NotAllowedError') {
+                                        // 自动播放被浏览器阻止，尝试先静音再播放
+                                        videoElement.muted = true;
+                                        elements.toggleMuteBtn.textContent = '取消静音';
+                                        elements.toggleMuteBtn.classList.add('mute-active');
+                                        
+                                        videoElement.play()
+                                            .then(() => {
+                                                state.isPlaying = true;
+                                                resolve();
+                                            })
+                                            .catch(err => reject(err));
+                                    } else if (error.name === 'AbortError') {
+                                        // 播放被中断，短暂延迟后重试
+                                        setTimeout(() => {
+                                            videoElement.play()
+                                                .then(() => {
+                                                    state.isPlaying = true;
+                                                    resolve();
+                                                })
+                                                .catch(err => reject(err));
+                                        }, 100);
+                                    } else {
+                                        reject(error);
+                                    }
+                                });
+                        } else {
+                            state.isPlaying = true;
+                            state.playPending = false;
+                            resolve();
+                        }
+                    });
+                },
+                
+                // 安全暂停视频的封装函数
+                safePause(videoElement) {
+                    // 如果有播放请求正在处理中，先等待
+                    if (state.playPending) {
+                        setTimeout(() => this.safePause(videoElement), 50);
+                        return;
+                    }
+                    
+                    if (!videoElement.paused) {
+                        videoElement.pause();
+                        state.isPlaying = false;
+                    }
                 }
             };
 
+            // API相关函数
             const apiService = {
                 getRandomAPI() {
-                    let newIndex;
-                    do {
-                        newIndex = Math.floor(Math.random() * config.API_URLS.length);
-                    } while (newIndex === state.currentApiIndex && config.API_URLS.length > 1);
+                    const use317ak = Math.random() > 0.5;
                     
-                    state.currentApiIndex = newIndex;
-                    return utils.getTimestampUrl(config.API_URLS[newIndex]);
+                    if (use317ak && config.API_317AK_PATHS.length > 0) {
+                        let newIndex;
+                        do {
+                            newIndex = Math.floor(Math.random() * config.API_317AK_PATHS.length);
+                        } while (newIndex === state.current317akIndex && config.API_317AK_PATHS.length > 1);
+                        
+                        state.current317akIndex = newIndex;
+                        const fullUrl = `${config.API_317AK_BASE}${config.API_317AK_PATHS[newIndex]}${config.API_317AK_PARAMS}`;
+                        return utils.getTimestampUrl(fullUrl);
+                    } else {
+                        let newIndex;
+                        do {
+                            newIndex = Math.floor(Math.random() * config.BASE_API_URLS.length);
+                        } while (newIndex === state.currentApiIndex && config.BASE_API_URLS.length > 1);
+                        
+                        state.currentApiIndex = newIndex;
+                        return utils.getTimestampUrl(config.BASE_API_URLS[newIndex]);
+                    }
                 }
             };
 
+            // 缓存管理
             const cacheManager = {
                 shouldCacheMore() {
                     return state.videoCache.length <= config.CACHE_THRESHOLD;
@@ -369,7 +499,7 @@
                     const video = document.createElement('video');
                     video.style.display = 'none';
                     video.preload = 'auto';
-                    video.muted = true;
+                    video.muted = true; // 静音预加载避免声音干扰
                     document.body.appendChild(video);
                     return video;
                 },
@@ -392,6 +522,7 @@
                     
                     videoElement.src = videoUrl;
                     
+                    // 视频加载成功
                     const loadedHandler = () => {
                         state.videoCache.push({ url: videoUrl, element: videoElement });
                         state.isCaching = false;
@@ -402,6 +533,7 @@
                         videoElement.removeEventListener('loadeddata', loadedHandler);
                     };
                     
+                    // 视频加载失败
                     const errorHandler = () => {
                         cleanup();
                         setTimeout(() => this.preloadVideoToCache(), 1000);
@@ -425,6 +557,7 @@
                 }
             };
 
+            // 视频控制
             const videoController = {
                 resizeVideoContainer() {
                     if (!elements.videoPlayer.videoWidth || !elements.videoPlayer.videoHeight) return;
@@ -477,17 +610,70 @@
                 },
                 
                 cleanupVideoResources() {
-                    elements.videoPlayer.pause();
+                    // 安全暂停视频
+                    utils.safePause(elements.videoPlayer);
                     elements.videoPlayer.src = '';
+                    elements.videoPlayer.load();
+                    state.currentVideoUrl = null;
+                    state.isPlaying = false;
+                },
+                
+                resetVideoElement() {
+                    console.log('重置视频元素以防止黑屏问题');
+                    const currentTime = elements.videoPlayer.currentTime;
+                    const isPlaying = state.isPlaying;
+                    const isMuted = elements.videoPlayer.muted;
+                    const src = elements.videoPlayer.src;
+                    
+                    if (!src) return;
+                    
+                    const playbackState = {
+                        currentTime,
+                        isPlaying,
+                        isMuted,
+                        src
+                    };
+                    
+                    this.cleanupVideoResources();
+                    
+                    elements.videoPlayer.src = playbackState.src;
+                    elements.videoPlayer.muted = playbackState.isMuted;
+                    
+                    const loadedMetadataHandler = () => {
+                        elements.videoPlayer.currentTime = playbackState.currentTime;
+                        
+                        if (playbackState.isPlaying) {
+                            utils.safePlay(elements.videoPlayer)
+                                .catch(e => console.error('重置后播放错误:', e));
+                        }
+                        
+                        this.resizeVideoContainer();
+                        elements.videoPlayer.removeEventListener('loadedmetadata', loadedMetadataHandler);
+                    };
+                    
+                    elements.videoPlayer.addEventListener('loadedmetadata', loadedMetadataHandler);
                     elements.videoPlayer.load();
                 },
                 
+                startVideoResetTimer() {
+                    if (state.videoResetTimer) {
+                        clearInterval(state.videoResetTimer);
+                    }
+                    
+                    state.videoResetTimer = setInterval(() => {
+                        this.resetVideoElement();
+                    }, config.VIDEO_RESET_INTERVAL);
+                },
+                
                 loadVideoFromCache() {
+                    utils.safePause(elements.videoPlayer);
+                    
                     const cachedVideo = cacheManager.getVideoFromCache();
                     
                     if (cachedVideo) {
                         this.cleanupVideoResources();
                         
+                        state.currentVideoUrl = cachedVideo.url;
                         elements.videoPlayer.src = cachedVideo.url;
                         
                         if (cachedVideo.element && cachedVideo.element.parentNode) {
@@ -496,7 +682,8 @@
                         
                         const loadedMetadataHandler = () => {
                             this.resizeVideoContainer();
-                            elements.videoPlayer.play().catch(e => console.error('播放错误:', e));
+                            utils.safePlay(elements.videoPlayer)
+                                .catch(e => console.error('播放错误:', e));
                             elements.videoPlayer.removeEventListener('loadedmetadata', loadedMetadataHandler);
                         };
                         
@@ -514,21 +701,21 @@
                 
                 loadVideoDirect() {
                     this.clearRetryTimer();
-                    
-                    this.cleanupVideoResources();
-                    
+                    utils.safePause(elements.videoPlayer);
                     this.showLoading();
                     
                     const selectedAPI = apiService.getRandomAPI();
-                    
+                    state.currentVideoUrl = selectedAPI;
                     elements.videoPlayer.src = selectedAPI;
-                    
                     elements.videoPlayer.loop = !state.autoPlayEnabled;
                     
                     const loadedMetadataHandler = () => {
                         this.resizeVideoContainer();
-                        elements.videoPlayer.play().catch(e => console.error('播放错误:', e));
                         this.hideLoading();
+                        
+                        utils.safePlay(elements.videoPlayer)
+                            .catch(e => console.error('播放错误:', e));
+                            
                         elements.videoPlayer.removeEventListener('loadedmetadata', loadedMetadataHandler);
                     };
                     
@@ -546,9 +733,21 @@
                         state.retryAttempts = 0;
                         this.loadVideoFromCache();
                     }
+                },
+                
+                checkVideoBlackScreen() {
+                    if (!elements.videoPlayer.paused && 
+                        elements.videoPlayer.videoWidth === 0 && 
+                        elements.videoPlayer.readyState >= 2) {
+                        console.log('检测到黑屏问题，尝试重置视频元素');
+                        this.resetVideoElement();
+                        return true;
+                    }
+                    return false;
                 }
             };
 
+            // 事件处理
             const eventHandlers = {
                 addButtonFeedback(button) {
                     button.classList.add('active-state');
@@ -584,17 +783,16 @@
                         videoController.resizeVideoContainer();
                         videoController.hideLoading();
                         state.retryAttempts = 0;
-                        
-                        elements.videoPlayer.play().catch(e => {
-                            console.error('自动播放失败:', e);
-                        });
+                        videoController.startVideoResetTimer();
                     });
                     
                     elements.videoPlayer.addEventListener('play', () => {
+                        state.isPlaying = true;
                         videoController.hideControls();
                     });
                     
                     elements.videoPlayer.addEventListener('pause', () => {
+                        state.isPlaying = false;
                         videoController.showControls();
                     });
                     
@@ -607,10 +805,13 @@
                     });
                     
                     elements.videoWrapper.addEventListener('click', () => {
+                        if (state.playPending) return;
+                        
                         if (elements.videoPlayer.paused) {
-                            elements.videoPlayer.play();
+                            utils.safePlay(elements.videoPlayer)
+                                .catch(e => console.error('点击播放失败:', e));
                         } else {
-                            elements.videoPlayer.pause();
+                            utils.safePause(elements.videoPlayer);
                         }
                         videoController.showControls();
                     });
@@ -653,6 +854,10 @@
                         videoController.handleVideoError();
                     });
                     
+                    setInterval(() => {
+                        videoController.checkVideoBlackScreen();
+                    }, 5000);
+                    
                     window.addEventListener('resize', utils.debounce(() => {
                         videoController.resizeVideoContainer();
                     }, 100));
@@ -680,6 +885,7 @@
                 elements.autoPlayBtn.style.background = state.autoPlayEnabled 
                     ? 'linear-gradient(to right, #4CAF50, #8BC34A)' 
                     : '#d11a2d';
+                
                 elements.videoPlayer.muted = config.MUTE_DEFAULT;
                 elements.toggleMuteBtn.textContent = elements.videoPlayer.muted ? '取消静音' : '开启静音';
                 if (elements.videoPlayer.muted) {
