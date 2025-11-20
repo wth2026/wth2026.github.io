@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI API 对话管理器</title>
+    <style>
+        :root {
+            --primary-color: #10a37f;
+            --primary-light: #e6f7f3;
+            --dark-color: #202123;
+            --light-color: #f9f9f9;
+            --border-color: #e5e5e5;
+            --error-color: #e74c3c;
+            --success-color: #2ecc71;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            color: #aaa;
+            font-size: 1rem;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .api-management, .chat-container {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--dark-color);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0d8c6c;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .btn-danger {
+            background-color: var(--error-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .api-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .api-item {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .api-info {
+            flex: 1;
+        }
+        
+        .api-name {
+            font-weight: bold;
+        }
+        
+        .api-details {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .chat-area {
+            height: 400px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            background-color: var(--light-color);
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        
+        .user-message {
+            background-color: var(--primary-light);
+            margin-left: auto;
+        }
+        
+        .assistant-message {
+            background-color: white;
+            border: 1px solid var(--border-color);
+        }
+        
+        .message-sender {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .message-input {
+            flex: 1;
+        }
+        
+        .status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
+        }
+        
+        .status.error {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--error-color);
+            display: block;
+        }
+        
+        .status.success {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--success-color);
+            display: block;
+        }
+        
+        .model-selector {
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>OpenAI API 对话管理器</h1>
+            <p class="description">管理多个API配置并与不同模型进行对话</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="api-management">
+                <h2 class="section-title">API 配置管理</h2>
+                
+                <form id="api-form">
+                    <div class="form-group">
+                        <label for="name">配置名称</label>
+                        <input type="text" id="name" placeholder="例如: OpenAI GPT-4" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="model">模型</label>
+                        <input type="text" id="model" placeholder="例如: gpt-4, gpt-3.5-turbo" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="base-url">Base URL</label>
+                        <input type="text" id="base-url" placeholder="例如: https://api.openai.com/v1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="api-key">API Key</label>
+                        <input type="password" id="api-key" placeholder="输入您的API密钥" required>
+                    </div>
+                    
+                    <button type="submit">添加配置</button>
+                </form>
+                
+                <div class="api-list" id="api-list">
+                    <!-- API配置列表将在这里动态生成 -->
+                </div>
+                
+                <div class="status" id="api-status"></div>
+            </div>
+            
+            <div class="chat-container">
+                <h2 class="section-title">对话界面</h2>
+                
+                <div class="model-selector">
+                    <label for="api-select">选择API配置</label>
+                    <select id="api-select">
+                        <option value="">-- 请选择API配置 --</option>
+                    </select>
+                </div>
+                
+                <div class="chat-area" id="chat-area">
+                    <div class="message assistant-message">
+                        <div class="message-sender">助手</div>
+                        <div>您好！请选择一个API配置开始对话。</div>
+                    </div>
+                </div>
+                
+                <div class="input-area">
+                    <input type="text" class="message-input" id="message-input" placeholder="输入您的消息..." disabled>
+                    <button id="send-button" disabled>发送</button>
+                </div>
+                
+                <div class="status" id="chat-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const apiForm = document.getElementById('api-form');
+            const apiList = document.getElementById('api-list');
+            const apiSelect = document.getElementById('api-select');
+            const chatArea = document.getElementById('chat-area');
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-button');
+            const apiStatus = document.getElementById('api-status');
+            const chatStatus = document.getElementById('chat-status');
+            
+            // 存储API配置
+            let apiConfigs = JSON.parse(localStorage.getItem('apiConfigs')) || [];
+            
+            // 当前选中的API配置
+            let currentApiConfig = null;
+            
+            // 渲染API配置列表
+            function renderApiList() {
+                apiList.innerHTML = '';
+                
+                if (apiConfigs.length === 0) {
+                    apiList.innerHTML = '<p style="text-align: center; color: #666;">暂无API配置</p>';
+                    return;
+                }
+                
+                apiConfigs.forEach((config, index) => {
+                    const apiItem = document.createElement('div');
+                    apiItem.className = 'api-item';
+                    
+                    apiItem.innerHTML = `
+                        <div class="api-info">
+                            <div class="api-name">${config.name}</div>
+                            <div class="api-details">模型: ${config.model} | URL: ${config.baseUrl}</div>
+                        </div>
+                        <div>
+                            <button class="btn-danger" onclick="deleteApiConfig(${index})">删除</button>
+                        </div>
+                    `;
+                    
+                    apiList.appendChild(apiItem);
+                });
+            }
+            
+            // 渲染API选择下拉框
+            function renderApiSelect() {
+                apiSelect.innerHTML = '<option value="">-- 请选择API配置 --</option>';
+                
+                apiConfigs.forEach((config, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${config.name} (${config.model})`;
+                    apiSelect.appendChild(option);
+                });
+            }
+            
+            // 添加API配置
+            apiForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('name').value;
+                const model = document.getElementById('model').value;
+                const baseUrl = document.getElementById('base-url').value;
+                const apiKey = document.getElementById('api-key').value;
+                
+                // 验证输入
+                if (!name || !model || !baseUrl || !apiKey) {
+                    showStatus(apiStatus, '所有字段都是必填的', 'error');
+                    return;
+                }
+                
+                // 创建新的API配置
+                const newConfig = {
+                    name,
+                    model,
+                    baseUrl,
+                    apiKey
+                };
+                
+                // 添加到配置列表
+                apiConfigs.push(newConfig);
+                
+                // 保存到本地存储
+                localStorage.setItem('apiConfigs', JSON.stringify(apiConfigs));
+                
+                // 重新渲染列表和下拉框
+                renderApiList();
+                renderApiSelect();
+                
+                // 重置表单
+                apiForm.reset();
+                
+                // 显示成功消息
+                showStatus(apiStatus, 'API配置添加成功', 'success');
+            });
+            
+            // 删除API配置
+            window.deleteApiConfig = function(index) {
+                if (confirm('确定要删除此API配置吗？')) {
+                    apiConfigs.splice(index, 1);
+                    localStorage.setItem('apiConfigs', JSON.stringify(apiConfigs));
+                    renderApiList();
+                    renderApiSelect();
+                    
+                    // 如果删除的是当前选中的配置，则重置聊天界面
+                    if (currentApiConfig && currentApiConfig.index === index) {
+                        currentApiConfig = null;
+                        messageInput.disabled = true;
+                        sendButton.disabled = true;
+                        addMessage('助手', '请选择一个API配置开始对话。', 'assistant');
+                    }
+                    
+                    showStatus(apiStatus, 'API配置已删除', 'success');
+                }
+            };
+            
+            // 选择API配置
+            apiSelect.addEventListener('change', function() {
+                const selectedIndex = parseInt(this.value);
+                
+                if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= apiConfigs.length) {
+                    currentApiConfig = null;
+                    messageInput.disabled = true;
+                    sendButton.disabled = true;
+                    return;
+                }
+                
+                currentApiConfig = {
+                    ...apiConfigs[selectedIndex],
+                    index: selectedIndex
+                };
+                
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                
+                // 清空聊天区域并添加欢迎消息
+                chatArea.innerHTML = '';
+                addMessage('助手', `已连接到 ${currentApiConfig.name} (${currentApiConfig.model})，现在可以开始对话了。`, 'assistant');
+            });
+            
+            // 发送消息
+            sendButton.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            async function sendMessage() {
+                const message = messageInput.value.trim();
+                
+                if (!message || !currentApiConfig) {
+                    return;
+                }
+                
+                // 添加用户消息到聊天区域
+                addMessage('您', message, 'user');
+                
+                // 清空输入框
+                messageInput.value = '';
+                
+                // 显示加载状态
+                const loadingMessage = addMessage('助手', '思考中...', 'assistant');
+                
+                try {
+                    // 调用API
+                    const response = await fetch(`${currentApiConfig.baseUrl}/chat/completions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${currentApiConfig.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: currentApiConfig.model,
+                            messages: [
+                                {
+                                    role: 'user',
+                                    content: message
+                                }
+                            ],
+                            stream: false
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // 移除加载消息
+                    chatArea.removeChild(loadingMessage);
+                    
+                    // 添加助手回复
+                    if (data.choices && data.choices.length > 0) {
+                        addMessage('助手', data.choices[0].message.content, 'assistant');
+                    } else {
+                        throw new Error('API返回了空响应');
+                    }
+                    
+                    // 隐藏状态消息
+                    hideStatus(chatStatus);
+                    
+                } catch (error) {
+                    // 移除加载消息
+                    chatArea.removeChild(loadingMessage);
+                    
+                    // 显示错误消息
+                    addMessage('助手', `抱歉，发生了错误: ${error.message}`, 'assistant');
+                    showStatus(chatStatus, `请求失败: ${error.message}`, 'error');
+                }
+            }
+            
+            // 添加消息到聊天区域
+            function addMessage(sender, content, type) {
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${type}-message`;
+                
+                messageElement.innerHTML = `
+                    <div class="message-sender">${sender}</div>
+                    <div>${content}</div>
+                `;
+                
+                chatArea.appendChild(messageElement);
+                chatArea.scrollTop = chatArea.scrollHeight;
+                
+                return messageElement;
+            }
+            
+            // 显示状态消息
+            function showStatus(element, message, type) {
+                element.textContent = message;
+                element.className = `status ${type}`;
+                
+                // 3秒后自动隐藏
+                setTimeout(() => {
+                    hideStatus(element);
+                }, 3000);
+            }
+            
+            // 隐藏状态消息
+            function hideStatus(element) {
+                element.className = 'status';
+            }
+            
+            // 初始化
+            renderApiList();
+            renderApiSelect();
+        });
+    </script>
+</body>
+</html>
