@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小雪节气祝福</title>
+    <title>小雪节气祝福弹窗</title>
     <style>
         * {
             margin: 0;
@@ -21,6 +21,8 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+            overflow: hidden;
         }
         
         .container {
@@ -33,6 +35,7 @@
             position: relative;
             overflow: hidden;
             text-align: center;
+            z-index: 10;
         }
         
         .container::before {
@@ -89,31 +92,37 @@
             box-shadow: 0 8px 20px rgba(42, 128, 185, 0.4);
         }
         
-        .blessings-container {
-            display: none;
-            margin-top: 40px;
+        .confirm-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         
-        .blessing {
-            background-color: #f8fdff;
+        /* 祝福语弹窗样式 */
+        .blessing-popup {
+            position: absolute;
+            padding: 15px 20px;
             border-radius: 15px;
-            padding: 20px;
-            margin: 15px 0;
-            border-left: 5px solid #6ab0de;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            text-align: left;
-            animation: fadeIn 0.5s ease;
-            font-size: 18px;
-            line-height: 1.6;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+            max-width: 200px;
+            text-align: center;
+            z-index: 5;
+            animation: popupAppear 0.5s ease-out, popupFade 4s ease-in-out 0.5s forwards;
+            cursor: pointer;
         }
         
-        .blessing:nth-child(odd) {
-            background-color: #e6f7ff;
+        @keyframes popupAppear {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes popupFade {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
         }
         
         .snowflake {
@@ -121,7 +130,7 @@
             color: #6ab0de;
             font-size: 20px;
             user-select: none;
-            z-index: -1;
+            z-index: 1;
             animation: fall linear infinite;
         }
         
@@ -158,32 +167,43 @@
         <p class="question">小雪时节已至，准备好迎接冬日的温暖了吗?</p>
         
         <div class="button-container">
-            <button class="confirm-btn">确定</button>
-        </div>
-        
-        <div class="blessings-container" id="blessingsContainer">
-            <!-- 祝福语将在这里动态生成 -->
+            <button class="confirm-btn" id="confirmBtn">确定</button>
         </div>
     </div>
 
     <script>
         // 祝福语数组
         const blessings = [
-            "小雪时节，愿你的心情如雪花般纯净，生活如暖阳般温馨！",
-            "小雪飘落，寒意渐浓，愿我的祝福能给你带来温暖与喜悦！",
-            "小雪节气到，愿你冬日安康，幸福绵长，快乐永驻！",
-            "小雪纷飞，思念如雪，愿远方的你一切安好，温暖如春！",
-            "小雪时节，愿你的生活如雪花般美丽，如暖炉般温馨！",
-            "小雪节气，愿你的忧愁随雪花飘散，快乐如阳光般灿烂！",
-            "小雪飘洒，愿你的心情如雪景般美丽，生活如暖茶般香甜！",
-            "小雪时节，愿你的每一天都充满阳光，每一步都走向幸福！",
-            "小雪节气，愿你的世界被温暖包围，被幸福填满！",
-            "小雪纷飞，愿你的心中永远有暖阳，生活永远有诗意！",
-            "小雪时节，愿你的笑容如雪花般纯洁，幸福如冬日般绵长！",
-            "小雪节气，愿你的生活如诗如画，心情如雪如花！",
-            "小雪飘落，愿你的每一天都充满惊喜，每一刻都值得珍惜！",
-            "小雪时节，愿你的梦想如雪花般轻盈，未来如阳光般明媚！",
-            "小雪节气，愿你的心中永远有暖流，生活永远有温情！"
+            "小雪时节，愿你的心情如雪花般纯净！",
+            "小雪飘落，愿我的祝福带来温暖！",
+            "小雪节气到，愿你冬日安康！",
+            "小雪纷飞，思念如雪，愿你安好！",
+            "小雪时节，愿你的生活如雪花般美丽！",
+            "小雪节气，愿忧愁随雪花飘散！",
+            "小雪飘洒，愿心情如雪景般美丽！",
+            "小雪时节，愿每一天都充满阳光！",
+            "小雪节气，愿世界被温暖包围！",
+            "小雪纷飞，愿心中永远有暖阳！",
+            "小雪时节，愿笑容如雪花般纯洁！",
+            "小雪节气，愿生活如诗如画！",
+            "小雪飘落，愿每一天充满惊喜！",
+            "小雪时节，愿梦想如雪花般轻盈！",
+            "小雪节气，愿心中永远有暖流！",
+            "冬日安康，幸福绵长！",
+            "冬日温暖，快乐永驻！",
+            "冬日祝福，温暖如春！",
+            "冬日暖阳，幸福相伴！",
+            "冬日温馨，快乐无限！"
+        ];
+        
+        // 弹窗背景颜色数组
+        const popupColors = [
+            "linear-gradient(135deg, #ffd3d3, #ff9a9a)",
+            "linear-gradient(135deg, #d3ffd3, #9aff9a)",
+            "linear-gradient(135deg, #d3d3ff, #9a9aff)",
+            "linear-gradient(135deg, #ffffd3, #ffff9a)",
+            "linear-gradient(135deg, #d3ffff, #9affff)",
+            "linear-gradient(135deg, #ffd3ff, #ff9aff)"
         ];
         
         // 创建雪花效果
@@ -212,32 +232,50 @@
         // 定期创建新雪花
         setInterval(createSnowflake, 500);
         
-        // 按钮点击事件
-        document.querySelector('.confirm-btn').addEventListener('click', function() {
-            this.textContent = '祝福已送达！';
-            this.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
+        // 创建祝福语弹窗
+        function createBlessingPopup() {
+            // 随机选择一条祝福语
+            const randomBlessing = blessings[Math.floor(Math.random() * blessings.length)];
             
-            // 显示祝福语容器
-            const blessingsContainer = document.getElementById('blessingsContainer');
-            blessingsContainer.style.display = 'block';
+            // 随机选择背景颜色
+            const randomColor = popupColors[Math.floor(Math.random() * popupColors.length)];
             
-            // 清空容器
-            blessingsContainer.innerHTML = '<h2 style="color: #2c80b9; margin-bottom: 20px;">冬日祝福</h2>';
+            // 创建弹窗元素
+            const popup = document.createElement('div');
+            popup.classList.add('blessing-popup');
+            popup.textContent = randomBlessing;
+            popup.style.background = randomColor;
             
-            // 随机选择5条祝福语
-            const selectedBlessings = getRandomBlessings(5);
+            // 随机位置（确保在可视区域内）
+            const maxX = window.innerWidth - 250;
+            const maxY = window.innerHeight - 100;
+            const randomX = Math.floor(Math.random() * maxX);
+            const randomY = Math.floor(Math.random() * maxY);
             
-            // 添加祝福语到容器
-            selectedBlessings.forEach((blessing, index) => {
-                const blessingElement = document.createElement('div');
-                blessingElement.classList.add('blessing');
-                blessingElement.textContent = blessing;
-                
-                // 延迟显示每条祝福语
-                setTimeout(() => {
-                    blessingsContainer.appendChild(blessingElement);
-                }, index * 300);
+            popup.style.left = `${randomX}px`;
+            popup.style.top = `${randomY}px`;
+            
+            // 添加到页面
+            document.body.appendChild(popup);
+            
+            // 点击弹窗可以提前关闭
+            popup.addEventListener('click', function() {
+                popup.remove();
             });
+            
+            // 5秒后自动移除弹窗
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.remove();
+                }
+            }, 5000);
+        }
+        
+        // 按钮点击事件
+        document.getElementById('confirmBtn').addEventListener('click', function() {
+            this.textContent = '祝福已送达！';
+            this.disabled = true;
+            this.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
             
             // 创建庆祝效果
             const confetti = document.createElement('div');
@@ -268,13 +306,25 @@
                 confetti.remove();
                 style.remove();
             }, 2000);
+            
+            // 开始创建祝福语弹窗
+            // 先创建几个初始弹窗
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createBlessingPopup();
+                }, i * 300);
+            }
+            
+            // 然后每隔一段时间创建一个新弹窗
+            const popupInterval = setInterval(() => {
+                createBlessingPopup();
+            }, 1000);
+            
+            // 10分钟后停止创建弹窗（可选）
+            setTimeout(() => {
+                clearInterval(popupInterval);
+            }, 600000);
         });
-        
-        // 随机选择祝福语
-        function getRandomBlessings(count) {
-            const shuffled = [...blessings].sort(() => 0.5 - Math.random());
-            return shuffled.slice(0, count);
-        }
     </script>
 </body>
 </html>
