@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小雪节气 - 冬日温暖</title>
+    <title>小雪节气祝福</title>
     <style>
         * {
             margin: 0;
@@ -15,24 +15,24 @@
         body {
             background: linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%);
             color: #333;
-            line-height: 1.6;
-            padding: 20px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
         
         .container {
-            max-width: 800px;
+            max-width: 600px;
             width: 90%;
             background-color: rgba(255, 255, 255, 0.9);
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            padding: 30px;
+            padding: 40px 30px;
             position: relative;
             overflow: hidden;
+            text-align: center;
         }
         
         .container::before {
@@ -45,33 +45,10 @@
             background: linear-gradient(90deg, #6ab0de, #a3d5f7, #6ab0de);
         }
         
-        .header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-        }
-        
-        .date {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2c80b9;
-            margin-right: 15px;
-        }
-        
-        .account {
-            font-size: 18px;
-            color: #666;
-            background-color: #f0f9ff;
-            padding: 5px 10px;
-            border-radius: 10px;
-        }
-        
         .title {
             font-size: 36px;
             color: #2c80b9;
-            text-align: center;
-            margin: 20px 0;
+            margin-bottom: 30px;
             position: relative;
         }
         
@@ -84,24 +61,14 @@
             margin: 10px auto;
         }
         
-        .content {
-            background-color: #f8fdff;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 25px 0;
-            border-left: 5px solid #6ab0de;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-        }
-        
         .question {
-            font-size: 22px;
+            font-size: 24px;
             color: #2c80b9;
-            text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            line-height: 1.5;
         }
         
         .button-container {
-            text-align: center;
             margin: 30px 0;
         }
         
@@ -109,8 +76,8 @@
             background: linear-gradient(135deg, #6ab0de, #2c80b9);
             color: white;
             border: none;
-            padding: 12px 40px;
-            font-size: 18px;
+            padding: 15px 50px;
+            font-size: 20px;
             border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -122,46 +89,31 @@
             box-shadow: 0 8px 20px rgba(42, 128, 185, 0.4);
         }
         
-        .tags {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 25px 0;
+        .blessings-container {
+            display: none;
+            margin-top: 40px;
         }
         
-        .tag {
+        .blessing {
+            background-color: #f8fdff;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 5px solid #6ab0de;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            text-align: left;
+            animation: fadeIn 0.5s ease;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        
+        .blessing:nth-child(odd) {
             background-color: #e6f7ff;
-            color: #2c80b9;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 16px;
-            border: 1px solid #b3e0ff;
         }
         
-        .link-container {
-            background-color: #f0f9ff;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 20px 0;
-            border: 1px dashed #6ab0de;
-        }
-        
-        .link {
-            color: #2c80b9;
-            text-decoration: none;
-            word-break: break-all;
-            display: block;
-            margin-bottom: 10px;
-            padding: 10px;
-            background-color: white;
-            border-radius: 5px;
-        }
-        
-        .instruction {
-            color: #666;
-            font-size: 14px;
-            text-align: center;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .snowflake {
@@ -181,18 +133,19 @@
         
         @media (max-width: 600px) {
             .container {
-                padding: 20px;
+                padding: 30px 20px;
             }
             
             .title {
                 font-size: 28px;
             }
             
-            .date {
+            .question {
                 font-size: 20px;
             }
             
-            .question {
+            .confirm-btn {
+                padding: 12px 40px;
                 font-size: 18px;
             }
         }
@@ -200,33 +153,39 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div class="date">4.12</div>
-            <div class="account">d@a.aA VYZ:/ 12/22</div>
-        </div>
-        
         <h1 class="title">小雪节气</h1>
         
-        <div class="content">
-            <p class="question">小雪时节已至，准备好迎接冬日的温暖了吗?</p>
-            
-            <div class="button-container">
-                <button class="confirm-btn">确定</button>
-            </div>
-            
-            <div class="tags">
-                <span class="tag">#代码</span>
-                <span class="tag">#代码分享</span>
-            </div>
-            
-            <div class="link-container">
-                <a href="https://v.douyin.com/OlgipEgWuuY/" class="link" target="_blank">https://v.douyin.com/OlgipEgWuuY/</a>
-                <p class="instruction">复制此链接，打开Dou音搜索，直接观看视频！</p>
-            </div>
+        <p class="question">小雪时节已至，准备好迎接冬日的温暖了吗?</p>
+        
+        <div class="button-container">
+            <button class="confirm-btn">确定</button>
+        </div>
+        
+        <div class="blessings-container" id="blessingsContainer">
+            <!-- 祝福语将在这里动态生成 -->
         </div>
     </div>
 
     <script>
+        // 祝福语数组
+        const blessings = [
+            "小雪时节，愿你的心情如雪花般纯净，生活如暖阳般温馨！",
+            "小雪飘落，寒意渐浓，愿我的祝福能给你带来温暖与喜悦！",
+            "小雪节气到，愿你冬日安康，幸福绵长，快乐永驻！",
+            "小雪纷飞，思念如雪，愿远方的你一切安好，温暖如春！",
+            "小雪时节，愿你的生活如雪花般美丽，如暖炉般温馨！",
+            "小雪节气，愿你的忧愁随雪花飘散，快乐如阳光般灿烂！",
+            "小雪飘洒，愿你的心情如雪景般美丽，生活如暖茶般香甜！",
+            "小雪时节，愿你的每一天都充满阳光，每一步都走向幸福！",
+            "小雪节气，愿你的世界被温暖包围，被幸福填满！",
+            "小雪纷飞，愿你的心中永远有暖阳，生活永远有诗意！",
+            "小雪时节，愿你的笑容如雪花般纯洁，幸福如冬日般绵长！",
+            "小雪节气，愿你的生活如诗如画，心情如雪如花！",
+            "小雪飘落，愿你的每一天都充满惊喜，每一刻都值得珍惜！",
+            "小雪时节，愿你的梦想如雪花般轻盈，未来如阳光般明媚！",
+            "小雪节气，愿你的心中永远有暖流，生活永远有温情！"
+        ];
+        
         // 创建雪花效果
         function createSnowflake() {
             const snowflake = document.createElement('div');
@@ -255,14 +214,36 @@
         
         // 按钮点击事件
         document.querySelector('.confirm-btn').addEventListener('click', function() {
-            this.textContent = '已准备好！';
+            this.textContent = '祝福已送达！';
             this.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
+            
+            // 显示祝福语容器
+            const blessingsContainer = document.getElementById('blessingsContainer');
+            blessingsContainer.style.display = 'block';
+            
+            // 清空容器
+            blessingsContainer.innerHTML = '<h2 style="color: #2c80b9; margin-bottom: 20px;">冬日祝福</h2>';
+            
+            // 随机选择5条祝福语
+            const selectedBlessings = getRandomBlessings(5);
+            
+            // 添加祝福语到容器
+            selectedBlessings.forEach((blessing, index) => {
+                const blessingElement = document.createElement('div');
+                blessingElement.classList.add('blessing');
+                blessingElement.textContent = blessing;
+                
+                // 延迟显示每条祝福语
+                setTimeout(() => {
+                    blessingsContainer.appendChild(blessingElement);
+                }, index * 300);
+            });
             
             // 创建庆祝效果
             const confetti = document.createElement('div');
-            confetti.textContent = '🎉';
+            confetti.textContent = '❄️';
             confetti.style.position = 'fixed';
-            confetti.style.fontSize = '30px';
+            confetti.style.fontSize = '40px';
             confetti.style.left = '50%';
             confetti.style.top = '50%';
             confetti.style.transform = 'translate(-50%, -50%)';
@@ -288,6 +269,12 @@
                 style.remove();
             }, 2000);
         });
+        
+        // 随机选择祝福语
+        function getRandomBlessings(count) {
+            const shuffled = [...blessings].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
     </script>
 </body>
 </html>
