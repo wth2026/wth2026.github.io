@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小雪节气 - 冬日温暖</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "STHeiti", sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 90%;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #6ab0de, #a3d5f7, #6ab0de);
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .date {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c80b9;
+            margin-right: 15px;
+        }
+        
+        .account {
+            font-size: 18px;
+            color: #666;
+            background-color: #f0f9ff;
+            padding: 5px 10px;
+            border-radius: 10px;
+        }
+        
+        .title {
+            font-size: 36px;
+            color: #2c80b9;
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .title::after {
+            content: "";
+            display: block;
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #2c80b9, transparent);
+            margin: 10px auto;
+        }
+        
+        .content {
+            background-color: #f8fdff;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 5px solid #6ab0de;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .question {
+            font-size: 22px;
+            color: #2c80b9;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .confirm-btn {
+            background: linear-gradient(135deg, #6ab0de, #2c80b9);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(42, 128, 185, 0.3);
+        }
+        
+        .confirm-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(42, 128, 185, 0.4);
+        }
+        
+        .tags {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 25px 0;
+        }
+        
+        .tag {
+            background-color: #e6f7ff;
+            color: #2c80b9;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            border: 1px solid #b3e0ff;
+        }
+        
+        .link-container {
+            background-color: #f0f9ff;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px dashed #6ab0de;
+        }
+        
+        .link {
+            color: #2c80b9;
+            text-decoration: none;
+            word-break: break-all;
+            display: block;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 5px;
+        }
+        
+        .instruction {
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .snowflake {
+            position: absolute;
+            color: #6ab0de;
+            font-size: 20px;
+            user-select: none;
+            z-index: -1;
+            animation: fall linear infinite;
+        }
+        
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 28px;
+            }
+            
+            .date {
+                font-size: 20px;
+            }
+            
+            .question {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="date">4.12</div>
+            <div class="account">d@a.aA VYZ:/ 12/22</div>
+        </div>
+        
+        <h1 class="title">小雪节气</h1>
+        
+        <div class="content">
+            <p class="question">小雪时节已至，准备好迎接冬日的温暖了吗?</p>
+            
+            <div class="button-container">
+                <button class="confirm-btn">确定</button>
+            </div>
+            
+            <div class="tags">
+                <span class="tag">#代码</span>
+                <span class="tag">#代码分享</span>
+            </div>
+            
+            <div class="link-container">
+                <a href="https://v.douyin.com/OlgipEgWuuY/" class="link" target="_blank">https://v.douyin.com/OlgipEgWuuY/</a>
+                <p class="instruction">复制此链接，打开Dou音搜索，直接观看视频！</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 创建雪花效果
+        function createSnowflake() {
+            const snowflake = document.createElement('div');
+            snowflake.classList.add('snowflake');
+            snowflake.innerHTML = '❄';
+            snowflake.style.left = Math.random() * 100 + 'vw';
+            snowflake.style.animationDuration = Math.random() * 5 + 5 + 's';
+            snowflake.style.opacity = Math.random() * 0.5 + 0.3;
+            snowflake.style.fontSize = Math.random() * 10 + 10 + 'px';
+            
+            document.body.appendChild(snowflake);
+            
+            // 雪花落下后移除
+            setTimeout(() => {
+                snowflake.remove();
+            }, 10000);
+        }
+        
+        // 初始创建一些雪花
+        for (let i = 0; i < 20; i++) {
+            setTimeout(createSnowflake, i * 300);
+        }
+        
+        // 定期创建新雪花
+        setInterval(createSnowflake, 500);
+        
+        // 按钮点击事件
+        document.querySelector('.confirm-btn').addEventListener('click', function() {
+            this.textContent = '已准备好！';
+            this.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
+            
+            // 创建庆祝效果
+            const confetti = document.createElement('div');
+            confetti.textContent = '🎉';
+            confetti.style.position = 'fixed';
+            confetti.style.fontSize = '30px';
+            confetti.style.left = '50%';
+            confetti.style.top = '50%';
+            confetti.style.transform = 'translate(-50%, -50%)';
+            confetti.style.zIndex = '1000';
+            confetti.style.animation = 'zoom 1s forwards';
+            
+            document.body.appendChild(confetti);
+            
+            // 添加CSS动画
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes zoom {
+                    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+                    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+                    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // 移除庆祝效果
+            setTimeout(() => {
+                confetti.remove();
+                style.remove();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
